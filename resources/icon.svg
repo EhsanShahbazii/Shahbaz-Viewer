@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="70%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#030712" />
+    </radialGradient>
+    <linearGradient id="shahbazPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0ea5e9" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="wingLeftGrad" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="60%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1e40af" />
+    </linearGradient>
+    <linearGradient id="wingRightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="60%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1e40af" />
+    </linearGradient>
+    <linearGradient id="goldCrest" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="falconGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bgGlow)" stroke="#1e293b" stroke-width="6" />
+  <ellipse cx="256" cy="245" rx="180" ry="120" fill="#0284c7" opacity="0.12" filter="url(#falconGlow)" />
+
+  <g opacity="0.85">
+    <path d="M196 370 C196 360 220 354 256 354 C292 354 316 360 316 370 C316 380 292 386 256 386 C220 386 196 380 196 370 Z" fill="none" stroke="#0ea5e9" stroke-width="3.5" opacity="0.4" />
+    <path d="M196 370 v14 c0 10 24 16 60 16 s60 -6 60 -16 v-14" fill="none" stroke="#0ea5e9" stroke-width="3.5" opacity="0.4" />
+    <path d="M196 384 v14 c0 10 24 16 60 16 s60 -6 60 -16 v-14" fill="none" stroke="#0ea5e9" stroke-width="3.5" opacity="0.4" />
+  </g>
+
+  <g id="leftWing">
+    <path d="M256 220 L160 120 L56 168 L140 216 L220 240 Z" fill="url(#wingLeftGrad)" opacity="0.95" />
+    <path d="M245 235 L130 190 L68 236 L160 264 L225 260 Z" fill="#0284c7" opacity="0.9" />
+    <path d="M235 255 L145 250 L98 298 L180 306 L225 285 Z" fill="#0369a1" opacity="0.85" />
+    <path d="M160 120 L56 168 L140 216 Z" fill="#7dd3fc" opacity="0.4" />
+  </g>
+
+  <g id="rightWing">
+    <path d="M256 220 L352 120 L456 168 L372 216 L292 240 Z" fill="url(#wingRightGrad)" opacity="0.95" />
+    <path d="M267 235 L382 190 L444 236 L352 264 L287 260 Z" fill="#0284c7" opacity="0.9" />
+    <path d="M277 255 L367 250 L414 298 L332 306 L287 285 Z" fill="#0369a1" opacity="0.85" />
+    <path d="M352 120 L456 168 L372 216 Z" fill="#7dd3fc" opacity="0.4" />
+  </g>
+
+  <g id="tailFeathers">
+    <path d="M236 295 L216 390 L256 425 L296 390 L276 295 Z" fill="#0369a1" />
+    <path d="M246 295 L256 415 L266 295 Z" fill="#38bdf8" opacity="0.7" />
+  </g>
+
+  <path d="M256 185 L292 245 L278 320 L256 345 L234 320 L220 245 Z" fill="url(#shahbazPrimary)" filter="url(#falconGlow)" />
+  <path d="M256 205 L280 250 L270 305 L256 322 L242 305 L232 250 Z" fill="#0f172a" opacity="0.55" />
+
+  <g id="falconHead">
+    <path d="M256 82 L266 125 L256 135 L246 125 Z" fill="url(#goldCrest)" />
+    <path d="M246 94 L252 128 L238 126 Z" fill="#f59e0b" />
+    <path d="M266 94 L274 126 L260 128 Z" fill="#f59e0b" />
+    <polygon points="256,120 280,152 268,188 244,188 232,152" fill="#e0f2fe" />
+    <polygon points="242,152 250,158 244,162" fill="#0284c7" />
+    <circle cx="247" cy="157" r="2.5" fill="#38bdf8" />
+    <polygon points="270,152 262,158 268,162" fill="#0284c7" />
+    <circle cx="265" cy="157" r="2.5" fill="#38bdf8" />
+    <polygon points="256,198 249,168 263,168" fill="url(#goldCrest)" />
+    <polygon points="256,198 252,175 256,180" fill="#b45309" />
+  </g>
+
+  <circle cx="56" cy="168" r="4.5" fill="#38bdf8" filter="url(#falconGlow)" />
+  <circle cx="68" cy="236" r="3.5" fill="#0ea5e9" />
+  <circle cx="98" cy="298" r="3" fill="#0284c7" />
+  <circle cx="456" cy="168" r="4.5" fill="#38bdf8" filter="url(#falconGlow)" />
+  <circle cx="444" cy="236" r="3.5" fill="#0ea5e9" />
+  <circle cx="414" cy="298" r="3" fill="#0284c7" />
+  <circle cx="256" cy="425" r="4" fill="#fbbf24" filter="url(#falconGlow)" />
+</svg>

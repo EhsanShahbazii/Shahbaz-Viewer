@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Custom VS Code style scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, rgba(121, 121, 121, 0.4));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, rgba(100, 100, 100, 0.7));
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--vscode-scrollbarSlider-activeBackground, rgba(85, 85, 85, 0.8));
+}
+
+/* Monospace font class for data cells */
+.font-mono-code {
+  font-family: var(--vscode-editor-font-family, Menlo, Monaco, "Courier New", monospace);
+}
+
+/* Input focus styles */
+input:focus, select:focus, textarea:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  border-color: var(--vscode-focusBorder) !important;
+}

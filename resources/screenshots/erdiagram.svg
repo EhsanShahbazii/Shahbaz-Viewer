@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560">
+  <rect width="1000" height="560" rx="8" fill="#090d16" stroke="#1e293b" stroke-width="2"/>
+  <!-- Top bar -->
+  <rect width="1000" height="42" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+  <text x="25" y="26" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#f8fafc">Shahbaz Viewer — Interactive Entity-Relationship Graph</text>
+  
+  <!-- ER Controls -->
+  <g transform="translate(620, 8)">
+    <rect width="360" height="26" rx="4" fill="#1e293b" stroke="#334155"/>
+    <text x="15" y="17" font-family="system-ui, sans-serif" font-size="11" fill="#38bdf8">🔍 Zoom 100%</text>
+    <text x="115" y="17" font-family="system-ui, sans-serif" font-size="11" fill="#f8fafc">Auto Layout</text>
+    <text x="205" y="17" font-family="system-ui, sans-serif" font-size="11" fill="#f8fafc">Save Layout</text>
+    <text x="295" y="17" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#10b981">Export ▾</text>
+  </g>
+
+  <!-- Relation Curved Arrow SVG (users -> orders) -->
+  <path d="M 280 200 C 350 200, 370 200, 440 200" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4 2" />
+  <polygon points="440,200 430,195 430,205" fill="#38bdf8" />
+  
+  <!-- Relation Curved Arrow SVG (customers -> orders) -->
+  <path d="M 280 370 C 350 370, 370 260, 440 260" fill="none" stroke="#a855f7" stroke-width="2" />
+  <polygon points="440,260 430,255 430,265" fill="#a855f7" />
+
+  <!-- Relation Curved Arrow SVG (orders -> order_items) -->
+  <path d="M 680 220 C 730 220, 740 220, 780 220" fill="none" stroke="#10b981" stroke-width="2" />
+  <polygon points="780,220 770,215 770,225" fill="#10b981" />
+
+  <!-- Table Node 1: USERS -->
+  <g transform="translate(60, 110)">
+    <rect width="220" height="190" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect width="220" height="32" rx="8" fill="#1e293b"/>
+    <text x="14" y="21" font-family="monospace" font-size="12" font-weight="700" fill="#38bdf8">users</text>
+    <text x="175" y="21" font-family="system-ui" font-size="10" fill="#64748b">52 rows</text>
+    
+    <text x="14" y="55" font-family="monospace" font-size="11" font-weight="600" fill="#fbbf24">🔑 id (INT)</text>
+    <text x="14" y="77" font-family="monospace" font-size="11" fill="#cbd5e1">username (TEXT)</text>
+    <text x="14" y="99" font-family="monospace" font-size="11" fill="#cbd5e1">email (TEXT)</text>
+    <text x="14" y="121" font-family="monospace" font-size="11" fill="#cbd5e1">role (TEXT)</text>
+    <text x="14" y="143" font-family="monospace" font-size="11" fill="#cbd5e1">rating (REAL)</text>
+    <text x="14" y="165" font-family="monospace" font-size="11" fill="#cbd5e1">status (TEXT)</text>
+  </g>
+
+  <!-- Table Node 2: CUSTOMERS -->
+  <g transform="translate(60, 330)">
+    <rect width="220" height="170" rx="8" fill="#0f172a" stroke="#a855f7" stroke-width="1.5"/>
+    <rect width="220" height="32" rx="8" fill="#1e293b"/>
+    <text x="14" y="21" font-family="monospace" font-size="12" font-weight="700" fill="#c084fc">customers</text>
+    <text x="170" y="21" font-family="system-ui" font-size="10" fill="#64748b">150 rows</text>
+    
+    <text x="14" y="55" font-family="monospace" font-size="11" font-weight="600" fill="#fbbf24">🔑 id (INT)</text>
+    <text x="14" y="77" font-family="monospace" font-size="11" fill="#cbd5e1">company_name (TEXT)</text>
+    <text x="14" y="99" font-family="monospace" font-size="11" fill="#cbd5e1">contact_name (TEXT)</text>
+    <text x="14" y="121" font-family="monospace" font-size="11" fill="#cbd5e1">country (TEXT)</text>
+    <text x="14" y="143" font-family="monospace" font-size="11" fill="#cbd5e1">credit_limit (REAL)</text>
+  </g>
+
+  <!-- Table Node 3: ORDERS -->
+  <g transform="translate(440, 130)">
+    <rect width="240" height="210" rx="8" fill="#0f172a" stroke="#0ea5e9" stroke-width="2"/>
+    <rect width="240" height="32" rx="8" fill="#0369a1"/>
+    <text x="14" y="21" font-family="monospace" font-size="12" font-weight="700" fill="#ffffff">orders</text>
+    <text x="185" y="21" font-family="system-ui" font-size="10" fill="#bae6fd">500 rows</text>
+    
+    <text x="14" y="55" font-family="monospace" font-size="11" font-weight="600" fill="#fbbf24">🔑 id (INT)</text>
+    <text x="14" y="77" font-family="monospace" font-size="11" fill="#cbd5e1">order_number (TEXT)</text>
+    <text x="14" y="99" font-family="monospace" font-size="11" font-weight="600" fill="#38bdf8">🔗 customer_id → customers.id</text>
+    <text x="14" y="121" font-family="monospace" font-size="11" font-weight="600" fill="#38bdf8">🔗 agent_id → users.id</text>
+    <text x="14" y="143" font-family="monospace" font-size="11" fill="#cbd5e1">total_amount (REAL)</text>
+    <text x="14" y="165" font-family="monospace" font-size="11" fill="#cbd5e1">status (TEXT)</text>
+    <text x="14" y="187" font-family="monospace" font-size="11" fill="#cbd5e1">order_date (TEXT)</text>
+  </g>
+
+  <!-- Table Node 4: ORDER_ITEMS -->
+  <g transform="translate(780, 130)">
+    <rect width="180" height="190" rx="8" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+    <rect width="180" height="32" rx="8" fill="#1e293b"/>
+    <text x="14" y="21" font-family="monospace" font-size="12" font-weight="700" fill="#34d399">order_items</text>
+    
+    <text x="14" y="55" font-family="monospace" font-size="11" font-weight="600" fill="#fbbf24">🔑 id (INT)</text>
+    <text x="14" y="77" font-family="monospace" font-size="11" font-weight="600" fill="#38bdf8">🔗 order_id</text>
+    <text x="14" y="99" font-family="monospace" font-size="11" font-weight="600" fill="#38bdf8">🔗 product_id</text>
+    <text x="14" y="121" font-family="monospace" font-size="11" fill="#cbd5e1">unit_price</text>
+    <text x="14" y="143" font-family="monospace" font-size="11" fill="#cbd5e1">quantity</text>
+    <text x="14" y="165" font-family="monospace" font-size="11" fill="#cbd5e1">discount</text>
+  </g>
+</svg>

@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560">
+  <rect width="1000" height="560" rx="8" fill="#18181b" stroke="#27272a" stroke-width="2"/>
+  <rect width="1000" height="42" fill="#27272a"/>
+  <text x="20" y="26" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="#f4f4f5">Shahbaz Viewer — CSV / JSON Import Wizard</text>
+
+  <!-- Modal Container Simulation -->
+  <g transform="translate(100, 60)">
+    <rect width="800" height="460" rx="10" fill="#18181b" stroke="#3f3f46" stroke-width="1.5"/>
+    <rect width="800" height="45" rx="10" fill="#27272a"/>
+    <text x="25" y="28" font-family="system-ui" font-size="14" font-weight="700" fill="#f4f4f5">🪄 Import Data Wizard (CSV, TSV, JSON, JSONL)</text>
+    
+    <!-- Steps Indicator -->
+    <g transform="translate(25, 65)">
+      <circle cx="12" cy="12" r="12" fill="#0284c7"/>
+      <text x="8" y="16" font-family="system-ui" font-size="11" font-weight="700" fill="#ffffff">1</text>
+      <text x="32" y="16" font-family="system-ui" font-size="12" font-weight="600" fill="#38bdf8">Upload &amp; Target</text>
+
+      <circle cx="212" cy="12" r="12" fill="#0284c7"/>
+      <text x="208" y="16" font-family="system-ui" font-size="11" font-weight="700" fill="#ffffff">2</text>
+      <text x="232" y="16" font-family="system-ui" font-size="12" font-weight="600" fill="#38bdf8">Schema &amp; Type Mapping</text>
+
+      <circle cx="452" cy="12" r="12" fill="#0284c7"/>
+      <text x="448" y="16" font-family="system-ui" font-size="11" font-weight="700" fill="#ffffff">3</text>
+      <text x="472" y="16" font-family="system-ui" font-size="12" font-weight="600" fill="#38bdf8">Live Preview &amp; Execute</text>
+    </g>
+
+    <!-- Source file and Table config -->
+    <g transform="translate(25, 115)">
+      <rect width="360" height="36" rx="4" fill="#121214" stroke="#27272a"/>
+      <text x="12" y="22" font-family="monospace" font-size="12" fill="#93c5fd">📄 customers_2026_q3.csv (3,500 rows)</text>
+
+      <g transform="translate(390, 0)">
+        <rect width="360" height="36" rx="4" fill="#121214" stroke="#0ea5e9" stroke-width="1.5"/>
+        <text x="12" y="22" font-family="monospace" font-size="12" fill="#f4f4f5">Target: <tspan fill="#38bdf8" font-weight="700">customers_leads (Auto Create)</tspan></text>
+      </g>
+    </g>
+
+    <!-- Column Type Inference Mapping Table -->
+    <g transform="translate(25, 170)">
+      <rect width="750" height="220" rx="6" fill="#121214" stroke="#27272a"/>
+      <rect width="750" height="30" fill="#27272a"/>
+      <text x="20" y="20" font-family="monospace" font-size="11" font-weight="700" fill="#38bdf8">SOURCE COLUMN</text>
+      <text x="200" y="20" font-family="monospace" font-size="11" font-weight="700" fill="#38bdf8">TARGET NAME</text>
+      <text x="380" y="20" font-family="monospace" font-size="11" font-weight="700" fill="#38bdf8">DETECTED TYPE</text>
+      <text x="560" y="20" font-family="monospace" font-size="11" font-weight="700" fill="#38bdf8">SAMPLE VALUE</text>
+
+      <!-- Row 1 -->
+      <text x="20" y="55" font-family="monospace" font-size="11" fill="#f4f4f5">cust_id</text>
+      <text x="200" y="55" font-family="monospace" font-size="11" fill="#38bdf8">id</text>
+      <text x="380" y="55" font-family="monospace" font-size="11" fill="#fbbf24">INTEGER (PK)</text>
+      <text x="560" y="55" font-family="monospace" font-size="11" fill="#a1a1aa">1001</text>
+
+      <!-- Row 2 -->
+      <text x="20" y="90" font-family="monospace" font-size="11" fill="#f4f4f5">company</text>
+      <text x="200" y="90" font-family="monospace" font-size="11" fill="#38bdf8">company_name</text>
+      <text x="380" y="90" font-family="monospace" font-size="11" fill="#38bdf8">TEXT</text>
+      <text x="560" y="90" font-family="monospace" font-size="11" fill="#a1a1aa">Shahbaz Technologies</text>
+
+      <!-- Row 3 -->
+      <text x="20" y="125" font-family="monospace" font-size="11" fill="#f4f4f5">annual_revenue</text>
+      <text x="200" y="125" font-family="monospace" font-size="11" fill="#38bdf8">annual_revenue</text>
+      <text x="380" y="125" font-family="monospace" font-size="11" fill="#10b981">REAL</text>
+      <text x="560" y="125" font-family="monospace" font-size="11" fill="#a1a1aa">450000.50</text>
+
+      <!-- Row 4 -->
+      <text x="20" y="160" font-family="monospace" font-size="11" fill="#f4f4f5">is_verified</text>
+      <text x="200" y="160" font-family="monospace" font-size="11" fill="#38bdf8">is_verified</text>
+      <text x="380" y="160" font-family="monospace" font-size="11" fill="#fbbf24">INTEGER</text>
+      <text x="560" y="160" font-family="monospace" font-size="11" fill="#a1a1aa">1 (true)</text>
+
+      <!-- Row 5 -->
+      <text x="20" y="195" font-family="monospace" font-size="11" fill="#f4f4f5">created_at</text>
+      <text x="200" y="195" font-family="monospace" font-size="11" fill="#38bdf8">created_at</text>
+      <text x="380" y="195" font-family="monospace" font-size="11" fill="#38bdf8">TEXT (ISO-8601)</text>
+      <text x="560" y="195" font-family="monospace" font-size="11" fill="#a1a1aa">2026-09-06 12:00:00</text>
+    </g>
+
+    <!-- Bottom Actions -->
+    <g transform="translate(25, 410)">
+      <text font-family="system-ui" font-size="12" fill="#10b981">✓ All 5 column types automatically validated with 0 errors.</text>
+      <rect x="580" y="-12" width="80" height="30" rx="4" fill="#27272a"/>
+      <text x="602" y="8" font-family="system-ui" font-size="12" fill="#f4f4f5">Cancel</text>
+      
+      <rect x="675" y="-12" width="100" height="30" rx="4" fill="#0284c7"/>
+      <text x="693" y="8" font-family="system-ui" font-size="12" font-weight="600" fill="#ffffff">Start Import</text>
+    </g>
+  </g>
+</svg>

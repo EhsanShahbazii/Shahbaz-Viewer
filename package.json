@@ -1,0 +1,160 @@
+{
+  "name": "shahbaz-viewer",
+  "displayName": "Shahbaz Viewer",
+  "description": "The majestic, ultra-fast SQLite Database Studio & Inspector for VS Code. High-speed virtualized DataGrid, interactive ER diagrams, visual query charts, full SQL Studio with EXPLAIN query plan advisor, schema diffing, mock data generator, and CSV/JSON import wizards.",
+  "version": "1.0.0",
+  "publisher": "ehsanshahbazi",
+  "author": {
+    "name": "Ehsan Shahbazi",
+    "url": "https://github.com/EhsanShahbazii"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EhsanShahbazii/Shahbaz-Viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EhsanShahbazii/Shahbaz-Viewer/issues"
+  },
+  "homepage": "https://github.com/EhsanShahbazii/Shahbaz-Viewer#readme",
+  "icon": "resources/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Data Science",
+    "Programming Languages",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "sqlite",
+    "database",
+    "viewer",
+    "sql",
+    "studio",
+    "er-diagram",
+    "data-grid",
+    "charts",
+    "csv-import",
+    "schema-diff",
+    "mock-data",
+    "orm-generator",
+    "shahbaz",
+    "cursor"
+  ],
+  "main": "./dist/extension.js",
+  "browser": "./dist/extension.js",
+  "activationEvents": [
+    "onView:shahbazViewer.databasesView",
+    "onCustomEditor:shahbazViewer.editor",
+    "onCommand:shahbazViewer.openDatabase",
+    "onCommand:shahbazViewer.refreshDatabases"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "shahbazViewer",
+          "title": "Shahbaz Viewer",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "shahbazViewer": [
+        {
+          "id": "shahbazViewer.databasesView",
+          "name": "SQLite Databases"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "shahbazViewer.databasesView",
+        "contents": "No SQLite databases found in workspace.\n[Open Database File](command:shahbazViewer.openDatabase)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "shahbazViewer.editor",
+        "displayName": "Shahbaz Viewer",
+        "selector": [
+          { "filenamePattern": "*.db" },
+          { "filenamePattern": "*.sqlite" },
+          { "filenamePattern": "*.sqlite3" },
+          { "filenamePattern": "*.db3" },
+          { "filenamePattern": "*.s3db" },
+          { "filenamePattern": "*.sl3" }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "shahbazViewer.openDatabase",
+        "title": "Shahbaz Viewer: Open SQLite Database",
+        "category": "Shahbaz Viewer",
+        "icon": "$(database)"
+      },
+      {
+        "command": "shahbazViewer.refreshDatabases",
+        "title": "Refresh Databases",
+        "category": "Shahbaz Viewer",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "shahbazViewer.openDatabase",
+          "when": "resourceExt == .db || resourceExt == .sqlite || resourceExt == .sqlite3 || resourceExt == .db3 || resourceExt == .s3db || resourceExt == .sl3",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "shahbazViewer.openDatabase",
+          "when": "view == shahbazViewer.databasesView",
+          "group": "navigation"
+        },
+        {
+          "command": "shahbazViewer.refreshDatabases",
+          "when": "view == shahbazViewer.databasesView",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "compile": "tsc -p ./ && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:extension": "node esbuild.js --watch",
+    "watch:webview": "vite build --watch",
+    "build:extension": "node esbuild.js --production",
+    "build:webview": "vite build",
+    "build": "npm run build:extension && npm run build:webview"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/sql.js": "^1.4.9",
+    "@types/vscode": "^1.85.0",
+    "autoprefixer": "^10.4.19",
+    "esbuild": "^0.20.2",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "@vitejs/plugin-react": "^4.2.1"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.16.0",
+    "@tanstack/react-virtual": "^3.5.0",
+    "@vscode/codicons": "^0.0.36",
+    "lucide-react": "^0.378.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sql.js": "^1.10.3"
+  }
+}
