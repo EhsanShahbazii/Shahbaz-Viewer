@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Shahbaz Viewer Banner](resources/banner.png)
+![Shahbaz Viewer Banner](resources/banner.png?raw=true)
 
 ### The Majestic SQLite Database Studio & Inspector for VS Code & Cursor
 
@@ -52,7 +52,7 @@ Most SQLite extensions are sluggish, lack modern visual inspection tools, or bre
 ### ⚡ 1. High-Performance Virtualized DataGrid
 Browse, search, sort, and edit massive tables effortlessly without frame drops.
 
-![DataGrid Interface](resources/screenshots/datagrid.png)
+![DataGrid Interface](resources/screenshots/datagrid.png?raw=true)
 
 - **60 FPS Virtualized Scrolling**: Render 100,000+ rows smoothly with `@tanstack/react-virtual`.
 - **Excel-Style Multi-Cell Range Selection**: Click and drag across rows and columns or hold `Shift` + Arrow keys to select rectangular cell regions.
@@ -66,7 +66,7 @@ Browse, search, sort, and edit massive tables effortlessly without frame drops.
 ### 🗺️ 2. Interactive Entity-Relationship (ER) Diagram
 Understand your database architecture visually in seconds.
 
-![ER Diagram](resources/screenshots/erdiagram.png)
+![ER Diagram](resources/screenshots/erdiagram.png?raw=true)
 
 - **Dynamic Foreign Key Graph**: Automatic linking of foreign keys with curved relationship vectors and cardinality indicators.
 - **Draggable Table Nodes**: Arrange entities freely on an infinite canvas with mouse wheel zoom in/out (20% to 300%) and smooth panning.
@@ -79,7 +79,7 @@ Understand your database architecture visually in seconds.
 ### 📊 3. Visual Analytics & Quick Charts
 Turn raw SQL tables and query results into rich visual reports inside your editor.
 
-![Visual Charts](resources/screenshots/charts.png)
+![Visual Charts](resources/screenshots/charts.png?raw=true)
 
 - **Multiple Chart Archetypes**:
   - 📊 **Bar Charts** (Vertical & Horizontal)
@@ -96,7 +96,7 @@ Turn raw SQL tables and query results into rich visual reports inside your edito
 ### 💻 4. SQL Studio & Monaco Query Engine
 A studio-grade SQL scratchpad with intelligent query performance analytics.
 
-![SQL Studio](resources/screenshots/sqlstudio.png)
+![SQL Studio](resources/screenshots/sqlstudio.png?raw=true)
 
 - **Integrated Monaco Editor**: Full SQL syntax highlighting, auto-completion, and query formatting (`Cmd+Shift+F` / `Ctrl+Shift+F`).
 - **Precise Execution Metrics**: High-resolution execution timing down to microseconds (`ms`) and row count badges.
@@ -110,7 +110,7 @@ A studio-grade SQL scratchpad with intelligent query performance analytics.
 ### 🪄 5. CSV / JSON Import Wizard
 Import external data into SQLite without writing boilerplate ingestion scripts.
 
-![Import Wizard](resources/screenshots/importwizard.png)
+![Import Wizard](resources/screenshots/importwizard.png?raw=true)
 
 - **Format Support**: Import **CSV**, **TSV**, **JSON** arrays, and **JSONL / NDJSON** newline-delimited data files.
 - **Automatic Column Type Detection**: Scans sample rows to automatically infer `INTEGER`, `REAL`, `TEXT`, or `BOOLEAN` types.
