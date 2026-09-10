@@ -70,6 +70,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   // Filter builder state
   const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false);
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
   const [draftRules, setDraftRules] = useState<FilterRule[]>(filterRules);
   const [draftConjunction, setDraftConjunction] = useState<'AND' | 'OR'>(filterConjunction);
 
@@ -407,13 +408,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-vscode-bg">
       {/* Top Filter & Action Bar */}
-      <div className="h-10 px-3 flex items-center justify-between border-b border-vscode-border bg-vscode-header flex-shrink-0 text-xs gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-lg">
-          <div className="relative w-full flex items-center">
+      <div className="h-10 px-2 sm:px-3 flex items-center justify-between border-b border-vscode-border bg-vscode-header flex-shrink-0 text-xs gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-1 max-w-sm sm:max-w-md min-w-0">
+          <div className="relative w-full flex items-center min-w-0">
             <span className="codicon codicon-search absolute left-2.5 top-1/2 -translate-y-1/2 text-vscode-fg/50 text-xs pointer-events-none flex items-center"></span>
             <input
               type="text"
-              placeholder={`Search in ${tableName}...`}
+              placeholder={`Search ${tableName}...`}
               value={filterText || ''}
               onChange={(e) => onFilterChange(e.target.value)}
               className="w-full pl-7 pr-7 py-1 bg-vscode-inputBg text-vscode-inputFg border border-vscode-inputBorder rounded text-xs outline-none focus:border-vscode-focusBorder"
@@ -431,7 +432,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
           {/* Visual Filter Builder Toggle Button */}
           <button
             onClick={() => setIsFilterBuilderOpen((prev) => !prev)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors flex-shrink-0 ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded transition-colors flex-shrink-0 ${
               isFilterBuilderOpen || (filterRules && filterRules.length > 0)
                 ? 'bg-vscode-button text-vscode-buttonFg font-medium shadow-sm'
                 : 'bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover'
@@ -439,7 +440,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             title="Open Visual Multi-Condition Filter Builder"
           >
             <span className="codicon codicon-filter text-xs"></span>
-            <span>Filters</span>
+            <span className="hidden sm:inline">Filters</span>
             {filterRules && filterRules.length > 0 && (
               <span className="ml-0.5 px-1 py-0.2 rounded-full bg-amber-400 text-black text-[10px] font-bold">
                 {filterRules.length}
@@ -448,51 +449,120 @@ export const DataGrid: React.FC<DataGridProps> = ({
           </button>
         </div>
 
-        {/* Quick Actions: Visualize, Mock Data, Add Row & Table Counts */}
-        <div className="flex items-center gap-2">
-          {onOpenVisualizer && (
-            <button
-              onClick={onOpenVisualizer}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
-              title="Open Quick Charts & Data Visualizer for this table"
-            >
-              <span className="codicon codicon-graph-line text-vscode-info text-xs"></span>
-              <span>Visualize</span>
-            </button>
-          )}
-
-          <button
-            onClick={onOpenMockDataModal}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
-            title="Generate realistic mock rows"
-          >
-            <span className="codicon codicon-sparkle text-amber-400 text-xs"></span>
-            <span>Mock Data</span>
-          </button>
-
+        {/* Action Controls & Table Counts */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Always Essential: Add Row Button */}
           <button
             onClick={() => setIsAddRowModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
             title="Open modal to insert a new row"
           >
             <span className="codicon codicon-plus text-xs"></span>
-            <span>Add Row</span>
+            <span className="hidden sm:inline">Add Row</span>
           </button>
 
-          <button
-            onClick={() => setColWidths({})}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
-            title="Auto-fit all columns to maximum cell content length"
-          >
-            <span className="codicon codicon-split-horizontal text-xs"></span>
-            <span>Auto-fit</span>
-          </button>
+          {/* Secondary Actions (Desktop: inline buttons) */}
+          <div className="hidden lg:flex items-center gap-1.5">
+            {onOpenVisualizer && (
+              <button
+                onClick={onOpenVisualizer}
+                className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
+                title="Open Quick Charts & Data Visualizer for this table"
+              >
+                <span className="codicon codicon-graph-line text-vscode-info text-xs"></span>
+                <span>Visualize</span>
+              </button>
+            )}
 
-          <div className="text-vscode-fg/70 ml-2">
-            <span>
+            <button
+              onClick={onOpenMockDataModal}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
+              title="Generate realistic mock rows"
+            >
+              <span className="codicon codicon-sparkle text-amber-400 text-xs"></span>
+              <span>Mock Data</span>
+            </button>
+
+            <button
+              onClick={() => setColWidths({})}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover rounded transition-colors"
+              title="Auto-fit all columns to maximum cell content length"
+            >
+              <span className="codicon codicon-split-horizontal text-xs"></span>
+              <span>Auto-fit</span>
+            </button>
+          </div>
+
+          {/* Secondary Actions (Small Viewport: Dropdown Menu) */}
+          <div className="relative lg:hidden">
+            <button
+              onClick={() => setIsMoreActionsOpen((prev) => !prev)}
+              className="flex items-center justify-center p-1 rounded bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover transition-colors"
+              title="More Actions"
+            >
+              <span className="codicon codicon-ellipsis text-xs"></span>
+            </button>
+
+            {isMoreActionsOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[90] cursor-default"
+                  onClick={() => setIsMoreActionsOpen(false)}
+                />
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-48 border border-vscode-menuBorder rounded-lg shadow-2xl py-1 text-xs z-[100] divide-y divide-vscode-border animate-in fade-in zoom-in-95 duration-100"
+                  style={{ backgroundColor: 'var(--vscode-menu-background, var(--vscode-editorWidget-background, #252526))' }}
+                >
+                  <div className="py-1">
+                    {onOpenVisualizer && (
+                      <button
+                        onClick={() => {
+                          setIsMoreActionsOpen(false);
+                          onOpenVisualizer();
+                        }}
+                        className="w-full text-left px-3 py-1.5 hover:bg-vscode-hover hover:text-vscode-fg flex items-center gap-2 transition-colors"
+                      >
+                        <span className="codicon codicon-graph-line text-vscode-info text-xs"></span>
+                        <span>Visualize Table</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setIsMoreActionsOpen(false);
+                        onOpenMockDataModal();
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-vscode-hover hover:text-vscode-fg flex items-center gap-2 transition-colors"
+                    >
+                      <span className="codicon codicon-sparkle text-amber-400 text-xs"></span>
+                      <span>Generate Mock Data</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsMoreActionsOpen(false);
+                        setColWidths({});
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-vscode-hover hover:text-vscode-fg flex items-center gap-2 transition-colors"
+                    >
+                      <span className="codicon codicon-split-horizontal text-xs"></span>
+                      <span>Auto-fit Columns</span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Row Count Badge */}
+          <div className="text-vscode-fg/70 text-[11px] sm:text-xs">
+            <span className="hidden sm:inline">
               {totalRows === 0 ? '0' : (page * pageSize + 1).toLocaleString()} -{' '}
               {Math.min((page + 1) * pageSize, totalRows).toLocaleString()} of{' '}
               <span className="font-semibold text-vscode-fg">{totalRows.toLocaleString()}</span> rows
+            </span>
+            <span className="sm:hidden font-mono font-medium text-vscode-fg">
+              {totalRows.toLocaleString()} rows
             </span>
           </div>
         </div>
@@ -707,14 +777,15 @@ export const DataGrid: React.FC<DataGridProps> = ({
       </div>
 
       {/* Bottom Pagination & Live Aggregate Status Bar */}
-      <div className="h-9 px-3 flex items-center justify-between border-t border-vscode-border bg-vscode-header text-xs flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-vscode-fg/70">Rows:</span>
+      <div className="min-h-9 px-2 sm:px-3 py-1 flex flex-wrap items-center justify-between border-t border-vscode-border bg-vscode-header text-xs flex-shrink-0 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="text-vscode-fg/70 hidden sm:inline">Rows:</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
               className="bg-vscode-inputBg text-vscode-inputFg border border-vscode-inputBorder rounded px-1.5 py-0.5 outline-none text-xs"
+              title="Rows per page"
             >
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -728,17 +799,19 @@ export const DataGrid: React.FC<DataGridProps> = ({
           <AggregateFooter selectedCells={selectedCells} totalRows={totalRows} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
           <span className="text-vscode-fg/70">
-            Page <span className="font-semibold text-vscode-fg">{page + 1}</span> of{' '}
+            <span className="hidden sm:inline">Page </span>
+            <span className="font-semibold text-vscode-fg">{page + 1}</span>
+            <span className="text-vscode-fg/50"> / </span>
             <span className="font-semibold text-vscode-fg">{totalPages}</span>
           </span>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               disabled={page === 0}
               onClick={() => onPageChange(0)}
-              className="h-6 px-1 rounded hover:bg-vscode-hover disabled:opacity-30 disabled:hover:bg-transparent inline-flex items-center -space-x-1.5"
+              className="h-6 px-1 rounded hover:bg-vscode-hover disabled:opacity-30 disabled:hover:bg-transparent hidden sm:inline-flex items-center -space-x-1.5"
               title="First Page"
             >
               <span className="codicon codicon-chevron-left text-xs"></span>
@@ -763,7 +836,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             <button
               disabled={page >= totalPages - 1}
               onClick={() => onPageChange(totalPages - 1)}
-              className="h-6 px-1 rounded hover:bg-vscode-hover disabled:opacity-30 disabled:hover:bg-transparent inline-flex items-center -space-x-1.5"
+              className="h-6 px-1 rounded hover:bg-vscode-hover disabled:opacity-30 disabled:hover:bg-transparent hidden sm:inline-flex items-center -space-x-1.5"
               title="Last Page"
             >
               <span className="codicon codicon-chevron-right text-xs"></span>

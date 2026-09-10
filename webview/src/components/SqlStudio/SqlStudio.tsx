@@ -136,7 +136,7 @@ export const SqlStudio: React.FC<SqlStudioProps> = ({
         </div>
 
         {/* Action Toolbar */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               onClick={handleRun}
@@ -151,7 +151,7 @@ export const SqlStudio: React.FC<SqlStudioProps> = ({
 
           {/* Execution Metrics Badges */}
           {queryResult && (
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
               {queryResult.error ? (
                 <span className="flex items-center gap-1 text-rose-400 font-medium">
                   <span className="codicon codicon-error text-xs"></span>
@@ -169,13 +169,17 @@ export const SqlStudio: React.FC<SqlStudioProps> = ({
                   </span>
                   <span className="text-vscode-fg/60">•</span>
                   <span className="text-vscode-fg/80">
-                    {queryResult.rows.length.toLocaleString()} rows returned
+                    {queryResult.rows.length.toLocaleString()}{' '}
+                    <span className="hidden sm:inline">rows returned</span>
+                    <span className="sm:hidden">rows</span>
                   </span>
                   {queryResult.rowsAffected !== undefined && queryResult.rowsAffected > 0 && (
                     <>
                       <span className="text-vscode-fg/60">•</span>
                       <span className="text-vscode-info">
-                        {queryResult.rowsAffected} rows modified
+                        {queryResult.rowsAffected}{' '}
+                        <span className="hidden sm:inline">rows modified</span>
+                        <span className="sm:hidden">mod</span>
                       </span>
                     </>
                   )}

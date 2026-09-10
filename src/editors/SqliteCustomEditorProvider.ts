@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { SqliteEngine } from '../database/engine';
 import { DataExporter } from '../database/export';
 import { WebviewToHostMessage } from '../common/messages';
@@ -53,25 +54,45 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     const wasmDir = path.join(this.context.extensionPath, 'dist');
     await SqliteEngine.init(wasmDir);
 
+    let currentActiveTable: string | undefined;
+
     // Read and load database
-    const loadDb = async () => {
+    const loadDb = async (preferredTable?: string) => {
       try {
-        const fileData = await vscode.workspace.fs.readFile(document.uri);
-        engine.load(Buffer.from(fileData), document.uri.fsPath);
+        let fileData: Uint8Array;
+        if (document.uri.scheme === 'file') {
+          fileData = fs.readFileSync(document.uri.fsPath);
+        } else {
+          fileData = await vscode.workspace.fs.readFile(document.uri);
+        }
+
+        engine.load(fileData, document.uri.fsPath);
         const metadata = engine.getMetadata();
         webviewPanel.webview.postMessage({
           type: 'init',
           payload: metadata,
         });
 
-        // Automatically load first table if exists
-        if (metadata.tables.length > 0) {
-          const firstTable = metadata.tables[0].name;
-          const tableData = engine.getTableData(firstTable, 0, 50);
+        // Determine which table to load:
+        // 1. Preferred table (if passed and valid)
+        // 2. Currently active table (if valid in new metadata)
+        // 3. First table in metadata
+        const targetTable =
+          preferredTable && metadata.tables.some((t) => t.name === preferredTable)
+            ? preferredTable
+            : currentActiveTable && metadata.tables.some((t) => t.name === currentActiveTable)
+            ? currentActiveTable
+            : metadata.tables.length > 0
+            ? metadata.tables[0].name
+            : undefined;
+
+        if (targetTable) {
+          currentActiveTable = targetTable;
+          const tableData = engine.getTableData(targetTable, 0, 50);
           webviewPanel.webview.postMessage({
             type: 'tableData',
             payload: {
-              tableName: firstTable,
+              tableName: targetTable,
               ...tableData,
               page: 0,
               pageSize: 50,
@@ -79,10 +100,14 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
           });
         }
       } catch (err: any) {
-        vscode.window.showErrorMessage(`Failed to open SQLite database: ${err.message}`);
+        const isAllocFail = String(err?.message || '').toLowerCase().includes('allocation failed');
+        const errorMsg = isAllocFail
+          ? `Failed to open SQLite database: The database file may be too large to allocate in WebAssembly memory. (${err.message})`
+          : `Failed to open SQLite database: ${err.message}`;
+        vscode.window.showErrorMessage(errorMsg);
         webviewPanel.webview.postMessage({
           type: 'error',
-          payload: { message: err.message },
+          payload: { message: errorMsg },
         });
       }
     };
@@ -90,12 +115,13 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     // Listen for file changes on the database
     const fileWatcher = vscode.workspace.createFileSystemWatcher(document.uri.fsPath);
     fileWatcher.onDidChange(() => {
-      // Reload metadata and table
-      loadDb();
+      // Reload metadata and preserve the active table
+      loadDb(currentActiveTable);
     });
 
     webviewPanel.onDidDispose(() => {
       fileWatcher.dispose();
+      engine.close();
     });
 
     // Handle messages from Webview
@@ -103,11 +129,18 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
       try {
         switch (message.type) {
           case 'ready': {
-            await loadDb();
+            await loadDb(currentActiveTable);
+            break;
+          }
+
+          case 'refresh': {
+            const target = message.payload?.tableName || currentActiveTable;
+            await loadDb(target);
             break;
           }
 
           case 'selectTable': {
+            currentActiveTable = message.payload.tableName;
             const {
               tableName,
               page,

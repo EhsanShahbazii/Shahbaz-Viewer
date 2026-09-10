@@ -83,6 +83,10 @@ export interface ImportOptions {
 export type WebviewToHostMessage =
   | { type: 'ready' }
   | {
+      type: 'refresh';
+      payload?: { tableName?: string };
+    }
+  | {
       type: 'selectTable';
       payload: {
         tableName: string;

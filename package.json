@@ -2,7 +2,7 @@
   "name": "shahbaz-viewer",
   "displayName": "Shahbaz Viewer",
   "description": "The majestic, ultra-fast SQLite Database Studio & Inspector for VS Code. High-speed virtualized DataGrid, interactive ER diagrams, visual query charts, full SQL Studio with EXPLAIN query plan advisor, schema diffing, mock data generator, and CSV/JSON import wizards.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "ehsanshahbazi",
   "author": {
     "name": "Ehsan Shahbazi",

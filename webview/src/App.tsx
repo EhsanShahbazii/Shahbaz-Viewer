@@ -128,8 +128,10 @@ export const App: React.FC = () => {
     switch (msg.type) {
       case 'init': {
         setMetadata(msg.payload);
-        if (msg.payload.tables.length > 0 && !activeTable) {
-          setActiveTable(msg.payload.tables[0].name);
+        if (msg.payload.tables.length > 0) {
+          if (!activeTable || !msg.payload.tables.some((t) => t.name === activeTable)) {
+            setActiveTable(msg.payload.tables[0].name);
+          }
         }
         break;
       }
@@ -470,6 +472,18 @@ export const App: React.FC = () => {
     });
   };
 
+  const handleRefresh = useCallback(() => {
+    if (activeTable) {
+      sendMessage({
+        type: 'refresh',
+        payload: { tableName: activeTable },
+      });
+      fetchTable(activeTable);
+    } else {
+      sendMessage({ type: 'ready' });
+    }
+  }, [activeTable, fetchTable, sendMessage]);
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-vscode-bg text-vscode-fg">
       {/* Top Header */}
@@ -484,7 +498,6 @@ export const App: React.FC = () => {
         onExport={handleExport}
         onOpenOrmModal={() => setIsOrmModalOpen(true)}
         onOpenImportModal={() => setIsImportModalOpen(true)}
-        onRefresh={() => fetchTable(activeTable)}
         isSidebarOpen={!isSidebarCollapsed}
         onToggleSidebar={handleToggleSidebar}
       />
@@ -499,6 +512,7 @@ export const App: React.FC = () => {
             activeTable={activeTable}
             sizeBytes={metadata?.sizeBytes || 0}
             onSelectTable={handleSelectTable}
+            onRefresh={handleRefresh}
             width={sidebarWidth}
             onWidthChange={handleSidebarWidthChange}
             onToggleCollapse={handleToggleSidebar}

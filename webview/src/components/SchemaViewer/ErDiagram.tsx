@@ -483,11 +483,11 @@ export const ErDiagram: React.FC<ErDiagramProps> = ({ tables, onSelectTable }) =
 
         <button
           onClick={handleResetLayout}
-          className="flex items-center gap-1 px-2 py-1 rounded hover:bg-vscode-hover text-vscode-fg"
+          className="flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded hover:bg-vscode-hover text-vscode-fg"
           title="Reset to default spacious arrangement"
         >
           <span className="codicon codicon-refresh text-xs"></span>
-          <span>Reset Layout</span>
+          <span className="hidden sm:inline">Reset Layout</span>
         </button>
 
         <button
@@ -507,11 +507,11 @@ export const ErDiagram: React.FC<ErDiagramProps> = ({ tables, onSelectTable }) =
         <div className="relative" ref={exportMenuRef}>
           <button
             onClick={() => setIsExportMenuOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-vscode-button text-vscode-buttonFg hover:bg-vscode-buttonHover text-xs font-semibold shadow-sm transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded bg-vscode-button text-vscode-buttonFg hover:bg-vscode-buttonHover text-xs font-semibold shadow-sm transition-colors"
             title="Export ER Diagram in various formats"
           >
             <span className="codicon codicon-cloud-download text-xs"></span>
-            <span>Export</span>
+            <span className="hidden sm:inline">Export</span>
             <span className="codicon codicon-chevron-down text-[10px]"></span>
           </button>
 

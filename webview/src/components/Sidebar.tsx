@@ -7,6 +7,7 @@ interface SidebarProps {
   activeTable?: string;
   sizeBytes: number;
   onSelectTable: (tableName: string) => void;
+  onRefresh: () => void;
   width?: number;
   onWidthChange?: (newWidth: number) => void;
   onToggleCollapse?: () => void;
@@ -18,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTable,
   sizeBytes,
   onSelectTable,
+  onRefresh,
   width = 240,
   onWidthChange,
   onToggleCollapse,
@@ -88,6 +90,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           )}
         </div>
+
+        {/* Refresh Button placed directly to the right of the table filter input */}
+        <button
+          onClick={onRefresh}
+          className="w-6 h-6 flex items-center justify-center rounded text-vscode-fg/70 hover:text-vscode-fg hover:bg-vscode-list-hoverBg transition-colors flex-shrink-0"
+          title="Refresh Databases & Table"
+        >
+          <span className="codicon codicon-refresh text-xs"></span>
+        </button>
 
         {onToggleCollapse && (
           <button

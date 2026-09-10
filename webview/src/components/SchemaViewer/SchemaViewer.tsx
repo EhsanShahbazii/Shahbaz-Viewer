@@ -25,11 +25,11 @@ export const SchemaViewer: React.FC<SchemaViewerProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-auto bg-vscode-bg p-6 space-y-6">
+    <div className="flex-1 flex flex-col h-full overflow-auto bg-vscode-bg p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Table Information Card */}
-      <div className="border border-vscode-border rounded bg-vscode-header p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+      <div className="border border-vscode-border rounded bg-vscode-header p-3 sm:p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="codicon codicon-table text-vscode-info text-lg"></span>
             <h2 className="text-base font-semibold">{tableName}</h2>
             <span className="text-xs px-2 py-0.5 rounded bg-vscode-badge text-vscode-badgeFg">
@@ -44,7 +44,7 @@ export const SchemaViewer: React.FC<SchemaViewerProps> = ({
         </div>
 
         {/* Columns Definition Table */}
-        <div className="border border-vscode-border rounded overflow-hidden bg-vscode-bg">
+        <div className="border border-vscode-border rounded overflow-x-auto bg-vscode-bg">
           <table className="w-full text-left text-xs">
             <thead className="bg-vscode-header border-b border-vscode-border font-medium text-vscode-fg/70">
               <tr>

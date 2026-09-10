@@ -6,7 +6,7 @@
 
 ### The Majestic SQLite Database Studio & Inspector for VS Code & Cursor
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge&logo=visualstudiocode)](https://github.com/EhsanShahbazii/Shahbaz-Viewer)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg?style=for-the-badge&logo=visualstudiocode)](https://github.com/EhsanShahbazii/Shahbaz-Viewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Author](https://img.shields.io/badge/Author-Ehsan%20Shahbazi-amber.svg?style=for-the-badge&logo=github)](https://github.com/EhsanShahbazii)
 [![SQLite](https://img.shields.io/badge/Engine-SQLite%20WASM-003B57.svg?style=for-the-badge&logo=sqlite)](https://sqlite.org)

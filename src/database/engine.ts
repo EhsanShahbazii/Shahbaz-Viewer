@@ -25,10 +25,23 @@ export class SqliteEngine {
     }
   }
 
-  public load(fileBuffer: Buffer, filePath: string): void {
+  public close(): void {
+    if (this.db) {
+      try {
+        this.db.close();
+      } catch (err) {
+        console.error('Failed to close SQLite database instance:', err);
+      }
+      this.db = null;
+    }
+  }
+
+  public load(fileBuffer: Buffer | Uint8Array, filePath: string): void {
     if (!SqliteEngine.SQL) {
       throw new Error('SQLite engine not initialized.');
     }
+    // Clean up any previously opened database to free WASM MEMFS and JS heap
+    this.close();
     this.filePath = filePath;
     this.db = new SqliteEngine.SQL.Database(fileBuffer);
   }
