@@ -137,6 +137,7 @@ export const App: React.FC = () => {
       }
 
       case 'tableData': {
+        const isSameTable = msg.payload.tableName === activeTable;
         setActiveTable(msg.payload.tableName);
         setColumns(msg.payload.columns);
         setRows(msg.payload.rows);
@@ -146,7 +147,13 @@ export const App: React.FC = () => {
         setPrimaryKeys(msg.payload.primaryKeys);
         setForeignKeys(msg.payload.foreignKeys);
         setTableSql(msg.payload.sql || '');
-        setDirtyChanges([]); // Clear dirty changes on fresh load
+        if (!isSameTable) {
+          setDirtyChanges([]); // Clear dirty changes on table switch
+          setFilterText('');
+          setFilterRules([]);
+          setSortColumn(undefined);
+          setSortDirection('asc');
+        }
         break;
       }
 

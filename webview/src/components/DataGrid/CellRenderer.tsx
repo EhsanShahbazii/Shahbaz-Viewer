@@ -11,7 +11,67 @@ interface CellRendererProps {
   onEditCell?: (newValue: any) => void;
   onOpenJson?: (data: any) => void;
   onOpenBlob?: (blob: { size: number; base64: string }) => void;
+  onOpenMedia?: (media: { type: 'image' | 'video'; url: string }) => void;
   onNavigateForeignKey?: (targetTable: string, targetColumn: string, value: any) => void;
+}
+
+export function isImageLink(val: string, colName?: string): boolean {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (trimmed.length < 5 || trimmed.length > 4096) return false;
+  if (trimmed.startsWith('data:image/')) return true;
+
+  // Extension check (supports query params and hash)
+  if (/\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)([?#].*)?$/i.test(trimmed)) return true;
+
+  // URL check with image path
+  if (/^https?:\/\/.*\/.*(png|jpe?g|gif|webp|svg|bmp|ico|avif)/i.test(trimmed)) return true;
+
+  // Column name heuristic for URLs without explicit image extension
+  if (/^https?:\/\//i.test(trimmed) && colName) {
+    const colLower = colName.toLowerCase();
+    if (
+      colLower.includes('avatar') ||
+      colLower.includes('photo') ||
+      colLower.includes('image') ||
+      colLower.includes('thumbnail') ||
+      colLower.includes('picture') ||
+      colLower.includes('logo') ||
+      colLower.includes('icon')
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isVideoLink(val: string, colName?: string): boolean {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  if (trimmed.length < 5 || trimmed.length > 4096) return false;
+  if (trimmed.startsWith('data:video/')) return true;
+
+  // Extension check (supports query params and hash)
+  if (/\.(mp4|webm|ogg|mov|m4v|mkv|avi)([?#].*)?$/i.test(trimmed)) return true;
+
+  // URL check with video path
+  if (/^https?:\/\/.*\/.*(mp4|webm|ogg|mov|m4v|mkv|avi)/i.test(trimmed)) return true;
+
+  // Column name heuristic for URLs
+  if (/^https?:\/\//i.test(trimmed) && colName) {
+    const colLower = colName.toLowerCase();
+    if (
+      colLower.includes('video') ||
+      colLower.includes('recording') ||
+      colLower.includes('clip') ||
+      colLower.includes('movie')
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export const CellRenderer: React.FC<CellRendererProps> = ({
@@ -24,6 +84,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   onEditCell,
   onOpenJson,
   onOpenBlob,
+  onOpenMedia,
   onNavigateForeignKey,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -199,7 +260,63 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
     );
   }
 
-  // 5. Numeric & Text formatting
+  // 5. Image Link Detection & Preview Badge
+  if (isImageLink(strVal, column.name)) {
+    return (
+      <div
+        onClick={(e) => onSelectCell && onSelectCell(e.shiftKey || e.metaKey || e.ctrlKey)}
+        onDoubleClick={handleStartEdit}
+        className={`relative w-full h-full flex items-center justify-between px-2 gap-2 cursor-text ${isDirty ? 'bg-amber-500/10' : ''}`}
+      >
+        <span className="truncate font-mono-code text-xs text-sky-300/90 underline decoration-sky-400/30 underline-offset-2" title={strVal}>
+          {strVal}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenMedia && onOpenMedia({ type: 'image', url: strVal });
+          }}
+          className="flex-shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 transition-colors"
+          title="Preview Image"
+        >
+          <span className="codicon codicon-file-media text-[11px]"></span>
+          <span>IMAGE</span>
+        </button>
+        {dirtyIndicator}
+      </div>
+    );
+  }
+
+  // 6. Video Link Detection & Preview Badge
+  if (isVideoLink(strVal, column.name)) {
+    return (
+      <div
+        onClick={(e) => onSelectCell && onSelectCell(e.shiftKey || e.metaKey || e.ctrlKey)}
+        onDoubleClick={handleStartEdit}
+        className={`relative w-full h-full flex items-center justify-between px-2 gap-2 cursor-text ${isDirty ? 'bg-amber-500/10' : ''}`}
+      >
+        <span className="truncate font-mono-code text-xs text-rose-300/90 underline decoration-rose-400/30 underline-offset-2" title={strVal}>
+          {strVal}
+        </span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenMedia && onOpenMedia({ type: 'video', url: strVal });
+          }}
+          className="flex-shrink-0 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-colors"
+          title="Preview Video"
+        >
+          <span className="codicon codicon-play text-[11px]"></span>
+          <span>VIDEO</span>
+        </button>
+        {dirtyIndicator}
+      </div>
+    );
+  }
+
+  // 7. Numeric & Text formatting
   const isNumeric =
     column.type.includes('INT') ||
     column.type.includes('REAL') ||

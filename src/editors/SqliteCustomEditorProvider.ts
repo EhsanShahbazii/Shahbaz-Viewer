@@ -55,6 +55,16 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     await SqliteEngine.init(wasmDir);
 
     let currentActiveTable: string | undefined;
+    let currentTableParams: {
+      tableName: string;
+      page: number;
+      pageSize: number;
+      sortColumn?: string;
+      sortDirection?: 'asc' | 'desc';
+      filterText?: string;
+      filterRules?: any[];
+      filterConjunction?: 'AND' | 'OR';
+    } | undefined;
 
     // Read and load database
     const loadDb = async (preferredTable?: string) => {
@@ -88,14 +98,37 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
         if (targetTable) {
           currentActiveTable = targetTable;
-          const tableData = engine.getTableData(targetTable, 0, 50);
+          const params =
+            currentTableParams && currentTableParams.tableName === targetTable
+              ? currentTableParams
+              : {
+                  tableName: targetTable,
+                  page: 0,
+                  pageSize: 50,
+                  sortColumn: undefined,
+                  sortDirection: 'asc' as const,
+                  filterText: '',
+                  filterRules: [],
+                  filterConjunction: 'AND' as const,
+                };
+
+          const tableData = engine.getTableData(
+            targetTable,
+            params.page,
+            params.pageSize,
+            params.sortColumn,
+            params.sortDirection,
+            params.filterText,
+            params.filterRules,
+            params.filterConjunction
+          );
           webviewPanel.webview.postMessage({
             type: 'tableData',
             payload: {
               tableName: targetTable,
               ...tableData,
-              page: 0,
-              pageSize: 50,
+              page: params.page,
+              pageSize: params.pageSize,
             },
           });
         }
@@ -112,14 +145,23 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
       }
     };
 
-    // Listen for file changes on the database
+    // Listen for file changes on the database with debounce for streaming writes
+    let fileChangeDebounceTimer: NodeJS.Timeout | undefined;
     const fileWatcher = vscode.workspace.createFileSystemWatcher(document.uri.fsPath);
     fileWatcher.onDidChange(() => {
-      // Reload metadata and preserve the active table
-      loadDb(currentActiveTable);
+      if (fileChangeDebounceTimer) {
+        clearTimeout(fileChangeDebounceTimer);
+      }
+      fileChangeDebounceTimer = setTimeout(() => {
+        // Reload metadata and preserve active table and its filter/sort state
+        loadDb(currentActiveTable);
+      }, 250);
     });
 
     webviewPanel.onDidDispose(() => {
+      if (fileChangeDebounceTimer) {
+        clearTimeout(fileChangeDebounceTimer);
+      }
       fileWatcher.dispose();
       engine.close();
     });
@@ -141,6 +183,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'selectTable': {
             currentActiveTable = message.payload.tableName;
+            currentTableParams = { ...message.payload };
             const {
               tableName,
               page,
@@ -243,14 +286,27 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                 payload: refreshedMeta,
               });
               // Send refreshed table data for the imported table
-              const refreshedData = engine.getTableData(res.tableName, 0, 50);
+              const params =
+                currentTableParams && currentTableParams.tableName === res.tableName
+                  ? currentTableParams
+                  : { tableName: res.tableName, page: 0, pageSize: 50 };
+              const refreshedData = engine.getTableData(
+                res.tableName,
+                params.page,
+                params.pageSize,
+                params.sortColumn,
+                params.sortDirection,
+                params.filterText,
+                params.filterRules,
+                params.filterConjunction
+              );
               webviewPanel.webview.postMessage({
                 type: 'tableData',
                 payload: {
                   tableName: res.tableName,
                   ...refreshedData,
-                  page: 0,
-                  pageSize: 50,
+                  page: params.page,
+                  pageSize: params.pageSize,
                 },
               });
             } else {
@@ -286,15 +342,28 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
               vscode.window.showInformationMessage(
                 res.message || 'Changes saved successfully.'
               );
-              // Refresh table data
-              const refreshed = engine.getTableData(tableName, 0, 50);
+              // Refresh table data preserving active sort and filters
+              const params =
+                currentTableParams && currentTableParams.tableName === tableName
+                  ? currentTableParams
+                  : { tableName, page: 0, pageSize: 50 };
+              const refreshed = engine.getTableData(
+                tableName,
+                params.page,
+                params.pageSize,
+                params.sortColumn,
+                params.sortDirection,
+                params.filterText,
+                params.filterRules,
+                params.filterConjunction
+              );
               webviewPanel.webview.postMessage({
                 type: 'tableData',
                 payload: {
                   tableName,
                   ...refreshed,
-                  page: 0,
-                  pageSize: 50,
+                  page: params.page,
+                  pageSize: params.pageSize,
                 },
               });
             } else {
@@ -489,15 +558,28 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                   vscode.window.showInformationMessage(
                     `Successfully inserted ${insertRes.count} mock rows into "${tableName}".`
                   );
-                  // Refresh table data
-                  const refreshed = engine.getTableData(tableName, 0, 50);
+                  // Refresh table data preserving active sort and filters
+                  const params =
+                    currentTableParams && currentTableParams.tableName === tableName
+                      ? currentTableParams
+                      : { tableName, page: 0, pageSize: 50 };
+                  const refreshed = engine.getTableData(
+                    tableName,
+                    params.page,
+                    params.pageSize,
+                    params.sortColumn,
+                    params.sortDirection,
+                    params.filterText,
+                    params.filterRules,
+                    params.filterConjunction
+                  );
                   webviewPanel.webview.postMessage({
                     type: 'tableData',
                     payload: {
                       tableName,
                       ...refreshed,
-                      page: 0,
-                      pageSize: 50,
+                      page: params.page,
+                      pageSize: params.pageSize,
                     },
                   });
                 } else {
@@ -577,7 +659,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
       <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource} data: blob:; img-src ${webview.cspSource} https: data: blob:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource} data: blob:; img-src ${webview.cspSource} https: http: data: blob:; media-src ${webview.cspSource} https: http: data: blob:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="${codiconsUri}">
         <link rel="stylesheet" href="${styleUri}">

@@ -5,6 +5,7 @@ import { CellRenderer } from '../DataGrid/CellRenderer';
 import { AggregateFooter, CellSelection } from '../DataGrid/AggregateFooter';
 import { JsonModal } from '../DataGrid/JsonModal';
 import { BlobModal } from '../DataGrid/BlobModal';
+import { MediaModal } from '../DataGrid/MediaModal';
 import { insertTimestamp } from '../../utils/timestamp';
 
 interface QueryResultTableProps {
@@ -54,6 +55,17 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
     open: false,
     colName: '',
     blob: null,
+  });
+  const [mediaModal, setMediaModal] = useState<{
+    open: boolean;
+    title: string;
+    mediaType: 'image' | 'video';
+    url: string;
+  }>({
+    open: false,
+    title: '',
+    mediaType: 'image',
+    url: '',
   });
 
   // Infer ColumnInfo for each column name
@@ -592,6 +604,14 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
                               blob,
                             })
                           }
+                          onOpenMedia={(media) =>
+                            setMediaModal({
+                              open: true,
+                              title: `${col.name} (Row #${rowIndex})`,
+                              mediaType: media.type,
+                              url: media.url,
+                            })
+                          }
                         />
                       </div>
                     );
@@ -640,6 +660,24 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
           colName={blobModal.colName}
           blob={blobModal.blob}
           onClose={() => setBlobModal({ open: false, colName: '', blob: null })}
+        />
+      )}
+
+      {/* Media Inspection Modal */}
+      {mediaModal.open && (
+        <MediaModal
+          isOpen={mediaModal.open}
+          title={mediaModal.title}
+          mediaType={mediaModal.mediaType}
+          url={mediaModal.url}
+          onClose={() =>
+            setMediaModal({
+              open: false,
+              title: '',
+              mediaType: 'image',
+              url: '',
+            })
+          }
         />
       )}
     </div>

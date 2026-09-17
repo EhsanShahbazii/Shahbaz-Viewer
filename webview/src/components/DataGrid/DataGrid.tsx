@@ -4,6 +4,7 @@ import { ColumnInfo, ForeignKeyInfo, CellChange, FilterRule } from '../../../src
 import { CellRenderer } from './CellRenderer';
 import { JsonModal } from './JsonModal';
 import { BlobModal } from './BlobModal';
+import { MediaModal } from './MediaModal';
 import { FilterBuilder } from './FilterBuilder';
 import { AggregateFooter, CellSelection } from './AggregateFooter';
 import { AddRowModal } from '../Modals/AddRowModal';
@@ -123,9 +124,117 @@ export const DataGrid: React.FC<DataGridProps> = ({
     blob: null,
   });
 
+  const [mediaModal, setMediaModal] = useState<{
+    open: boolean;
+    title: string;
+    mediaType: 'image' | 'video';
+    url: string;
+  }>({
+    open: false,
+    title: '',
+    mediaType: 'image',
+    url: '',
+  });
+
+  // Persistent filtered & sorted rows guard:
+  // When new data is added or streaming in, ensure search, filter rules, and column sort remain strictly applied!
+  const displayRows = useMemo(() => {
+    let result = rows;
+
+    // 1. Filter by search text
+    if (filterText && filterText.trim().length > 0) {
+      const term = filterText.trim().toLowerCase();
+      result = result.filter((r) => {
+        return columns.some((col) => {
+          const val = r[col.name];
+          if (val === null || val === undefined) return false;
+          return String(val).toLowerCase().includes(term);
+        });
+      });
+    }
+
+    // 2. Filter by structured filter rules
+    if (filterRules && filterRules.length > 0) {
+      result = result.filter((r) => {
+        const matches = filterRules.map((rule) => {
+          const col = columns.find((c) => c.name === rule.column);
+          if (!col) return true;
+          const val = r[col.name];
+          const strVal = val === null || val === undefined ? '' : String(val);
+          const ruleVal = rule.value || '';
+
+          switch (rule.operator) {
+            case '=':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val === Number(ruleVal)
+                : strVal.toLowerCase() === ruleVal.toLowerCase();
+            case '!=':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val !== Number(ruleVal)
+                : strVal.toLowerCase() !== ruleVal.toLowerCase();
+            case '>':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val > Number(ruleVal)
+                : strVal > ruleVal;
+            case '>=':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val >= Number(ruleVal)
+                : strVal >= ruleVal;
+            case '<':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val < Number(ruleVal)
+                : strVal < ruleVal;
+            case '<=':
+              return typeof val === 'number' && !isNaN(Number(ruleVal))
+                ? val <= Number(ruleVal)
+                : strVal <= ruleVal;
+            case 'contains':
+              return strVal.toLowerCase().includes(ruleVal.toLowerCase());
+            case 'starts_with':
+              return strVal.toLowerCase().startsWith(ruleVal.toLowerCase());
+            case 'ends_with':
+              return strVal.toLowerCase().endsWith(ruleVal.toLowerCase());
+            case 'is_null':
+              return val === null || val === undefined;
+            case 'is_not_null':
+              return val !== null && val !== undefined;
+            case 'in': {
+              const items = ruleVal.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+              return items.includes(strVal.toLowerCase());
+            }
+            default:
+              return true;
+          }
+        });
+
+        return filterConjunction === 'OR'
+          ? matches.some(Boolean)
+          : matches.every(Boolean);
+      });
+    }
+
+    // 3. Sort by sortColumn & sortDirection
+    if (sortColumn && sortDirection) {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortColumn];
+        const valB = b[sortColumn];
+        if (valA === null || valA === undefined) return sortDirection === 'asc' ? 1 : -1;
+        if (valB === null || valB === undefined) return sortDirection === 'asc' ? -1 : 1;
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortDirection === 'asc' ? valA - valB : valB - valA;
+        }
+        return sortDirection === 'asc'
+          ? String(valA).localeCompare(String(valB), undefined, { numeric: true })
+          : String(valB).localeCompare(String(valA), undefined, { numeric: true });
+      });
+    }
+
+    return result;
+  }, [rows, columns, filterText, filterRules, filterConjunction, sortColumn, sortDirection]);
+
   // Virtualizer for 60fps scrolling
   const rowVirtualizer = useVirtualizer({
-    count: rows.length,
+    count: displayRows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 32, // 32px standard row height
     overscan: 15,
@@ -138,9 +247,9 @@ export const DataGrid: React.FC<DataGridProps> = ({
       // Header length with badges, sort icon, column name, type pill, padding
       const headerLen = (col.name.length + col.type.length) * 8 + 80;
       let maxContentLen = 0;
-      const sampleSize = Math.min(rows.length, 80);
+      const sampleSize = Math.min(displayRows.length, 80);
       for (let i = 0; i < sampleSize; i++) {
-        const r = rows[i];
+        const r = displayRows[i];
         const val = r[col.name];
         if (val !== null && val !== undefined) {
           let str: string;
@@ -160,7 +269,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       map[col.name] = idealW;
     });
     return map;
-  }, [columns, rows]);
+  }, [columns, displayRows]);
 
   // Column width calculation (user resized OR auto-calculated content length OR fallback 160)
   const getColWidth = (colName: string): number => {
@@ -239,13 +348,13 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // Select a rectangular range of cells between two coordinates
   const selectCellRange = (startRow: number, startCol: number, endRow: number, endCol: number, append = false) => {
     const minR = Math.max(0, Math.min(startRow, endRow));
-    const maxR = Math.min(rows.length - 1, Math.max(startRow, endRow));
+    const maxR = Math.min(displayRows.length - 1, Math.max(startRow, endRow));
     const minC = Math.max(0, Math.min(startCol, endCol));
     const maxC = Math.min(columns.length - 1, Math.max(startCol, endCol));
 
     const rangeCells: CellSelection[] = [];
     for (let r = minR; r <= maxR; r++) {
-      const row = rows[r];
+      const row = displayRows[r];
       if (!row) continue;
       const displayRow = page * pageSize + r + 1;
       for (let c = minC; c <= maxC; c++) {
@@ -318,7 +427,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault();
-        selectCellRange(0, 0, rows.length - 1, columns.length - 1, false);
+        selectCellRange(0, 0, displayRows.length - 1, columns.length - 1, false);
         return;
       }
 
@@ -338,7 +447,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
       let newC = currentAnchor.colIdx;
 
       if (e.key === 'ArrowUp') newR = Math.max(0, newR - 1);
-      if (e.key === 'ArrowDown') newR = Math.min(rows.length - 1, newR + 1);
+      if (e.key === 'ArrowDown') newR = Math.min(displayRows.length - 1, newR + 1);
       if (e.key === 'ArrowLeft') newC = Math.max(0, newC - 1);
       if (e.key === 'ArrowRight') newC = Math.min(columns.length - 1, newC + 1);
 
@@ -346,7 +455,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
         selectCellRange(currentAnchor.rowIdx, currentAnchor.colIdx, newR, newC, false);
       } else {
         setSelectionAnchor({ rowIdx: newR, colIdx: newC });
-        const targetRow = rows[newR];
+        const targetRow = displayRows[newR];
         const targetCol = columns[newC];
         if (targetRow && targetCol) {
           const displayRow = page * pageSize + newR + 1;
@@ -357,7 +466,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectionAnchor, rows, columns, page, pageSize]);
+  }, [selectionAnchor, displayRows, columns, page, pageSize]);
 
   // Select all cells in a row
   const handleSelectRow = (rowIdx: number, row: any, e: React.MouseEvent) => {
@@ -385,7 +494,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // Select all cells in a column
   const handleSelectColumn = (colName: string, colIdx: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const colCells: CellSelection[] = rows.map((row, rIdx) => ({
+    const colCells: CellSelection[] = displayRows.map((row, rIdx) => ({
       rowIndex: page * pageSize + rIdx + 1,
       columnName: colName,
       value: row[colName],
@@ -677,14 +786,14 @@ export const DataGrid: React.FC<DataGridProps> = ({
           </div>
 
           {/* Virtual Row Items */}
-          {rows.length === 0 ? (
+          {displayRows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-vscode-fg/50 text-sm">
               <span className="codicon codicon-search text-3xl mb-2 opacity-50"></span>
               <span>No records found</span>
             </div>
           ) : (
             rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
+              const row = displayRows[virtualRow.index];
               const rowIndex = page * pageSize + virtualRow.index + 1;
 
               return (
@@ -762,6 +871,14 @@ export const DataGrid: React.FC<DataGridProps> = ({
                               open: true,
                               colName: `${col.name} (Row #${rowIndex})`,
                               blob,
+                            })
+                          }
+                          onOpenMedia={(media) =>
+                            setMediaModal({
+                              open: true,
+                              title: `${col.name} (Row #${rowIndex})`,
+                              mediaType: media.type,
+                              url: media.url,
                             })
                           }
                           onNavigateForeignKey={onNavigateForeignKey}
@@ -859,6 +976,21 @@ export const DataGrid: React.FC<DataGridProps> = ({
         columnName={blobModal.colName}
         blobData={blobModal.blob as any}
         onClose={() => setBlobModal({ open: false, colName: '', blob: null })}
+      />
+
+      <MediaModal
+        isOpen={mediaModal.open}
+        title={mediaModal.title}
+        mediaType={mediaModal.mediaType}
+        url={mediaModal.url}
+        onClose={() =>
+          setMediaModal({
+            open: false,
+            title: '',
+            mediaType: 'image',
+            url: '',
+          })
+        }
       />
 
       <AddRowModal
