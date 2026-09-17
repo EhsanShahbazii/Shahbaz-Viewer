@@ -46,10 +46,24 @@ async function createEnrichedDb() {
       is_verified INTEGER DEFAULT 1,
       rating REAL DEFAULT 5.0,
       avatar_blob BLOB,
+      avatar_url TEXT,
       profile_json TEXT,
       last_login_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       deleted_at DATETIME
+    );
+
+    -- CAT MEMES (For testing Media Preview modal & image/video badges)
+    CREATE TABLE cat_memes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      meme_name TEXT NOT NULL,
+      category TEXT CHECK(category IN ('Classic', 'Grumpy', 'Cute', 'Derp', 'Wholesome', 'Video Clip')) DEFAULT 'Classic',
+      image_url TEXT NOT NULL,
+      video_url TEXT,
+      upvotes INTEGER DEFAULT 0,
+      tags_json TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     -- CATEGORIES (Hierarchical with self-referential foreign key)
@@ -80,6 +94,7 @@ async function createEnrichedDb() {
       tags_json TEXT,
       dimensions_json TEXT,
       thumbnail_blob BLOB,
+      image_url TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (category_id) REFERENCES categories(id)
     );
@@ -272,13 +287,125 @@ async function createEnrichedDb() {
   catStmt.free();
   console.log('Inserted 13 categories.');
 
-  // 3. Insert Users (50 realistic users)
+  // 3. Cat Memes (Dedicated table for media preview modal testing)
+  const catMemeList = [
+    {
+      title: 'I Had Fun Once. It Was Awful.',
+      meme_name: 'Grumpy Cat',
+      category: 'Grumpy',
+      image_url: 'https://upload.wikimedia.org/wikipedia/commons/1/1c/Grumpy_Cat_meme_example.jpg',
+      video_url: null,
+      upvotes: 94820,
+      tags: ['grumpy', 'classic', 'no', 'legend']
+    },
+    {
+      title: 'Tardar Sauce, The True Queen of Sass',
+      meme_name: 'Tardar Sauce',
+      category: 'Grumpy',
+      image_url: 'https://upload.wikimedia.org/wikipedia/commons/e/ee/Grumpy_Cat_by_Gage_Skidmore.jpg',
+      video_url: null,
+      upvotes: 82130,
+      tags: ['grumpy', 'portrait', 'celebrity']
+    },
+    {
+      title: 'Dramatic Stare Cat',
+      meme_name: 'Cat Stare',
+      category: 'Classic',
+      image_url: 'https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg',
+      video_url: null,
+      upvotes: 61400,
+      tags: ['stare', 'green-eyes', 'intense']
+    },
+    {
+      title: 'Deal With It Cat',
+      meme_name: 'Cool Sunglasses Cat',
+      category: 'Classic',
+      image_url: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800',
+      video_url: null,
+      upvotes: 75200,
+      tags: ['cool', 'sunglasses', 'swag', 'deal-with-it']
+    },
+    {
+      title: 'Serious Work & Corporate Cat',
+      meme_name: 'Business Cat',
+      category: 'Wholesome',
+      image_url: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=800',
+      video_url: null,
+      upvotes: 53900,
+      tags: ['business', 'tie', 'office', 'corporate']
+    },
+    {
+      title: 'When you drop table without WHERE clause in prod',
+      meme_name: 'Shocked Cat',
+      category: 'Derp',
+      image_url: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=800',
+      video_url: null,
+      upvotes: 110450,
+      tags: ['shocked', 'database', 'sql', 'panic']
+    },
+    {
+      title: 'Sleeping on Developer Keyboard',
+      meme_name: 'Cozy Tabby',
+      category: 'Cute',
+      image_url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800',
+      video_url: null,
+      upvotes: 42100,
+      tags: ['sleep', 'keyboard', 'tabby', 'warm']
+    },
+    {
+      title: 'Waiting for unit tests to pass',
+      meme_name: 'Patient Kitten',
+      category: 'Cute',
+      image_url: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800',
+      video_url: null,
+      upvotes: 38700,
+      tags: ['kitten', 'waiting', 'patient', 'wholesome']
+    },
+    {
+      title: 'Inspecting SQLite B-Tree Page Headers',
+      meme_name: 'Curious Cat',
+      category: 'Wholesome',
+      image_url: 'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800',
+      video_url: null,
+      upvotes: 67300,
+      tags: ['inspect', 'curious', 'sqlite', 'explorer']
+    },
+    {
+      title: 'Big Buck Bunny High-Res Video Loop',
+      meme_name: 'WebM Video Reel',
+      category: 'Video Clip',
+      image_url: 'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=800',
+      video_url: 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.360p.vp9.webm',
+      upvotes: 89000,
+      tags: ['video', 'loop', 'hd', 'playback']
+    }
+  ];
+
+  const memeStmt = db.prepare(`
+    INSERT INTO cat_memes (title, meme_name, category, image_url, video_url, upvotes, tags_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?);
+  `);
+  catMemeList.forEach((m) => {
+    memeStmt.run([
+      m.title,
+      m.meme_name,
+      m.category,
+      m.image_url,
+      m.video_url,
+      m.upvotes,
+      JSON.stringify(m.tags)
+    ]);
+  });
+  memeStmt.free();
+  console.log(`Inserted ${catMemeList.length} cat memes.`);
+
+  // 4. Insert Users (50 realistic users)
   const firstNames = ['Sophia', 'Liam', 'Olivia', 'Noah', 'Emma', 'Jackson', 'Ava', 'Aiden', 'Isabella', 'Lucas', 'Mia', 'Ethan', 'Harper', 'Mason', 'Evelyn', 'Oliver', 'Amelia', 'Elijah', 'Abigail', 'Logan', 'Emily', 'Alexander', 'Elizabeth', 'James', 'Mila', 'Benjamin'];
   const lastNames = ['Chen', 'Smith', 'Tremblay', 'Patel', 'Mueller', 'Garcia', 'Nakamura', 'Kim', 'Johansson', 'Dubois', 'Silva', 'Rossi', 'Kowalski', 'Novak', 'Larsen', 'Fischer', 'O\'Connor', 'Tanaka', 'Santos', 'Meyer'];
 
   const userStmt = db.prepare(`
-    INSERT INTO users (uuid, username, full_name, email, role, status, is_verified, rating, avatar_blob, profile_json, last_login_at, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    INSERT INTO users (uuid, username, full_name, email, role, status, is_verified, rating, avatar_blob, avatar_url, profile_json, last_login_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
   `);
 
   const userIds = [];
@@ -297,6 +424,7 @@ async function createEnrichedDb() {
       preferences: { dark_mode: true, notifications_email: true }
     });
     const avatar = createColoredPng(randomInt(30, 220), randomInt(30, 220), randomInt(30, 220));
+    const avatarUrl = catMemeList[(i - 1) % catMemeList.length].image_url;
     const created = `2025-0${randomInt(1, 9)}-${randomInt(10, 28)} 10:14:00`;
     const lastLogin = `2026-03-0${randomInt(1, 6)} ${randomInt(10, 22)}:${randomInt(10, 59)}:00`;
 
@@ -310,6 +438,7 @@ async function createEnrichedDb() {
       1,
       rating,
       avatar,
+      avatarUrl,
       profile,
       lastLogin,
       created
@@ -382,9 +511,18 @@ async function createEnrichedDb() {
   ];
 
   const prodStmt = db.prepare(`
-    INSERT INTO products (sku, category_id, title, description, price, cost_price, stock_quantity, is_published, rating, reviews_count, tags_json, dimensions_json, thumbnail_blob, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    INSERT INTO products (sku, category_id, title, description, price, cost_price, stock_quantity, is_published, rating, reviews_count, tags_json, dimensions_json, thumbnail_blob, image_url, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
   `);
+
+  const productImages = [
+    'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800',
+    'https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800',
+    'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=800',
+    'https://images.unsplash.com/photo-1561948955-570b270e7c36?w=800',
+    'https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800',
+    'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800'
+  ];
 
   const productIds = [];
   let skuCounter = 1000;
@@ -411,6 +549,7 @@ async function createEnrichedDb() {
     });
 
     const thumbnail = createColoredPng(randomInt(40, 200), randomInt(40, 200), randomInt(40, 200));
+    const imgUrl = productImages[i % productImages.length];
 
     prodStmt.run([
       sku,
@@ -426,6 +565,7 @@ async function createEnrichedDb() {
       JSON.stringify(base.tags),
       dims,
       thumbnail,
+      imgUrl,
       `2025-0${randomInt(1, 9)}-${randomInt(10, 28)} 08:30:00`
     ]);
     productIds.push(i + 1);
