@@ -80,28 +80,21 @@ export class SqliteCliEngine implements ISqliteEngine {
    * falling back to COUNT(*) if the table is WITHOUT ROWID or returns null.
    */
   public async getFastRowCount(tableName: string): Promise<number> {
-    const escaped = SqliteCliEngine.escapeIdentifier(tableName);
-    // 1. Try max(_rowid_) which takes ~3ms regardless of database size
-    try {
-      const rows = await this.queryJson<{ cnt: number | null }>(
-        `PRAGMA mmap_size = 268435456; SELECT max(_rowid_) as cnt FROM "${escaped}";`,
-        3000
-      );
-      if (rows.length > 0 && rows[0].cnt !== null && rows[0].cnt !== undefined && rows[0].cnt >= 0) {
-        return Number(rows[0].cnt);
-      }
-    } catch {
-      // Fall through if table is WITHOUT ROWID
+    const cached = this.rowCountCache.get(`${tableName}::[]`);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    // 2. Fallback to COUNT(*) with timeout
+    const escaped = SqliteCliEngine.escapeIdentifier(tableName);
     try {
       const countRows = await this.queryJson<{ count: number }>(
-        `PRAGMA mmap_size = 268435456; SELECT COUNT(*) as count FROM "${escaped}";`,
-        5000
+        `PRAGMA mmap_size = 268435456; PRAGMA query_only = ON; SELECT COUNT(*) as count FROM "${escaped}";`,
+        30000
       );
       if (countRows.length > 0 && countRows[0].count !== undefined) {
-        return Number(countRows[0].count);
+        const count = Number(countRows[0].count);
+        this.rowCountCache.set(`${tableName}::[]`, count);
+        return count;
       }
     } catch {
       // ignore
@@ -276,17 +269,57 @@ export class SqliteCliEngine implements ISqliteEngine {
     const tables: TableInfo[] = [];
     const views: TableInfo[] = [];
 
-    // Query columns, foreign keys, and fast row counts in parallel for all tables/views
+    // 1. Batch query exact row counts for all tables in a single high-performance pass
+    const tableNames = schemaRows.filter((r) => r.type === 'table').map((r) => r.name);
+    const rowCountMap = new Map<string, number>();
+
+    if (tableNames.length > 0) {
+      try {
+        const unionSql = tableNames
+          .map(
+            (tbl) =>
+              `SELECT ${SqliteCliEngine.escapeSql(tbl)} AS tbl, COUNT(*) AS cnt FROM "${SqliteCliEngine.escapeIdentifier(tbl)}"`
+          )
+          .join('\nUNION ALL\n');
+
+        const countQuery = `
+          PRAGMA mmap_size = 268435456;
+          PRAGMA query_only = ON;
+          ${unionSql};
+        `;
+
+        const countRows = await this.queryJson<{ tbl: string; cnt: number }>(countQuery, 60000);
+        for (const item of countRows) {
+          if (item && item.tbl && item.cnt !== undefined) {
+            const cnt = Number(item.cnt);
+            rowCountMap.set(item.tbl, cnt);
+            this.rowCountCache.set(`${item.tbl}::[]`, cnt);
+          }
+        }
+      } catch {
+        // Fallback to individual counts if batch query fails
+      }
+    }
+
+    // 2. Query columns, foreign keys, and assemble metadata
     const tablePromises = schemaRows.map(async (row) => {
       const type = row.type;
       const name = row.name;
       const sql = row.sql || '';
 
-      const [columns, foreignKeys, rowCount] = await Promise.all([
+      const [columns, foreignKeys] = await Promise.all([
         this.getTableColumns(name),
         type === 'table' ? this.getTableForeignKeys(name) : Promise.resolve([]),
-        type === 'table' ? this.getFastRowCount(name) : Promise.resolve(0),
       ]);
+
+      let rowCount = 0;
+      if (type === 'table') {
+        if (rowCountMap.has(name)) {
+          rowCount = rowCountMap.get(name)!;
+        } else {
+          rowCount = await this.getFastRowCount(name);
+        }
+      }
 
       const primaryKeys = columns.filter((c) => c.pk > 0).map((c) => c.name);
       const blobColNames = new Set(

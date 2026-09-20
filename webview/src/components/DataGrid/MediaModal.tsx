@@ -276,18 +276,15 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             <button
               type="button"
               onClick={() => setIsFullscreen((prev) => !prev)}
-              className={`p-1.5 rounded transition-colors ${
-                isFullscreen
-                  ? 'bg-vscode-button text-vscode-buttonFg hover:bg-vscode-buttonHover'
-                  : 'hover:bg-vscode-hover text-vscode-fg'
-              }`}
+              className="flex items-center gap-1 text-xs px-2.5 py-1 rounded bg-vscode-secondaryBtn text-vscode-secondaryBtnFg hover:bg-vscode-secondaryBtnHover transition-colors"
               title={isFullscreen ? 'Exit Fullscreen (F / Esc)' : 'Fullscreen View (F)'}
             >
               <span
                 className={`codicon ${
                   isFullscreen ? 'codicon-screen-normal' : 'codicon-screen-full'
-                } text-sm`}
+                }`}
               ></span>
+              <span className="hidden md:inline">{isFullscreen ? 'Exit Full' : 'Fullscreen'}</span>
             </button>
 
             {/* Copy Button */}
@@ -391,7 +388,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             </div>
           ) : mediaType === 'image' ? (
             <div
-              className="w-full h-full flex items-center justify-center p-3 sm:p-5 overflow-hidden relative"
+              className="w-full h-full min-h-0 min-w-0 flex items-center justify-center p-3 sm:p-5 overflow-hidden relative"
               style={{
                 backgroundImage:
                   'radial-gradient(rgba(128, 128, 128, 0.25) 1px, transparent 0)',
@@ -410,6 +407,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   WebkitUserDrag: 'none',
                   maxWidth: '100%',
                   maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
                   objectFit: 'contain',
                 }}
                 className="rounded shadow-lg pointer-events-none"

@@ -11,6 +11,13 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('sqliteViewerStudio.databasesView', databasesProvider)
   );
+  try {
+    context.subscriptions.push(
+      vscode.window.registerTreeDataProvider('shahbazViewer.databasesView', databasesProvider)
+    );
+  } catch {
+    // Legacy view ID alias
+  }
 
   // Command to refresh databases list
   const refreshHandler = () => databasesProvider.refresh();

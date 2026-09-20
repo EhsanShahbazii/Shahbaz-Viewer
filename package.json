@@ -46,6 +46,7 @@
   "browser": "./dist/extension.js",
   "activationEvents": [
     "onView:sqliteViewerStudio.databasesView",
+    "onView:shahbazViewer.databasesView",
     "onCustomEditor:sqliteViewerStudio.editor",
     "onCustomEditor:shahbazViewer.editor",
     "onCommand:sqliteViewerStudio.openDatabase",
@@ -66,6 +67,11 @@
         {
           "id": "sqliteViewerStudio.databasesView",
           "name": "SQLite Databases"
+        },
+        {
+          "id": "shahbazViewer.databasesView",
+          "name": "SQLite Databases (Legacy)",
+          "when": "false"
         }
       ]
     },
