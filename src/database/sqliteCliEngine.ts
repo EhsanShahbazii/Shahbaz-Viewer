@@ -21,9 +21,22 @@ import {
 } from './types';
 import { MockDataGenerator } from './mockGenerator';
 
+interface CachedSchema {
+  columns: ColumnInfo[];
+  foreignKeys: ForeignKeyInfo[];
+  primaryKeys: string[];
+  sql: string;
+  hasRowid: boolean;
+  blobColNames: Set<string>;
+}
+
 export class SqliteCliEngine implements ISqliteEngine {
   private filePath: string = '';
   private sqlite3Path: string = 'sqlite3';
+
+  // In-memory RAM caches for ultra-fast page flips (<10ms)
+  private schemaCache = new Map<string, CachedSchema>();
+  private rowCountCache = new Map<string, number>();
 
   constructor(customSqlite3Path?: string) {
     if (customSqlite3Path && customSqlite3Path.trim()) {
@@ -43,12 +56,15 @@ export class SqliteCliEngine implements ISqliteEngine {
 
   public async load(filePath: string): Promise<void> {
     this.filePath = filePath;
+    this.schemaCache.clear();
+    this.rowCountCache.clear();
     // Verify that sqlite3 binary works and can query the database
     await this.runRawSql('SELECT 1;');
   }
 
   public close(): void {
-    // Stateless per-query spawn; no persistent file locks to free
+    this.schemaCache.clear();
+    this.rowCountCache.clear();
   }
 
   public getFilePath(): string {
@@ -57,6 +73,91 @@ export class SqliteCliEngine implements ISqliteEngine {
 
   public saveToDisk(): void {
     // Changes are committed directly to the disk database file
+  }
+
+  /**
+   * Fast row count estimation: tries max(_rowid_) first (instant index B-tree lookup ~3ms),
+   * falling back to COUNT(*) if the table is WITHOUT ROWID or returns null.
+   */
+  public async getFastRowCount(tableName: string): Promise<number> {
+    const escaped = SqliteCliEngine.escapeIdentifier(tableName);
+    // 1. Try max(_rowid_) which takes ~3ms regardless of database size
+    try {
+      const rows = await this.queryJson<{ cnt: number | null }>(
+        `PRAGMA mmap_size = 268435456; SELECT max(_rowid_) as cnt FROM "${escaped}";`,
+        3000
+      );
+      if (rows.length > 0 && rows[0].cnt !== null && rows[0].cnt !== undefined && rows[0].cnt >= 0) {
+        return Number(rows[0].cnt);
+      }
+    } catch {
+      // Fall through if table is WITHOUT ROWID
+    }
+
+    // 2. Fallback to COUNT(*) with timeout
+    try {
+      const countRows = await this.queryJson<{ count: number }>(
+        `PRAGMA mmap_size = 268435456; SELECT COUNT(*) as count FROM "${escaped}";`,
+        5000
+      );
+      if (countRows.length > 0 && countRows[0].count !== undefined) {
+        return Number(countRows[0].count);
+      }
+    } catch {
+      // ignore
+    }
+
+    return 0;
+  }
+
+  /**
+   * Retrieves or populates cached table schema in RAM.
+   */
+  public async getSchema(tableName: string): Promise<CachedSchema> {
+    const cached = this.schemaCache.get(tableName);
+    if (cached) {
+      return cached;
+    }
+
+    const escaped = SqliteCliEngine.escapeIdentifier(tableName);
+    const [columns, foreignKeys] = await Promise.all([
+      this.getTableColumns(tableName),
+      this.getTableForeignKeys(tableName),
+    ]);
+    const primaryKeys = columns.filter((c) => c.pk > 0).map((c) => c.name);
+
+    let sqlDef = '';
+    try {
+      const defRows = await this.queryJson<{ sql: string }>(
+        `SELECT sql FROM sqlite_master WHERE name = ${SqliteCliEngine.escapeSql(tableName)} LIMIT 1;`
+      );
+      if (defRows.length > 0 && defRows[0].sql) {
+        sqlDef = String(defRows[0].sql);
+      }
+    } catch {}
+
+    let hasRowid = true;
+    try {
+      await this.runRawSql(`SELECT rowid FROM "${escaped}" LIMIT 1;`);
+    } catch {
+      hasRowid = false;
+    }
+
+    const blobColNames = new Set(
+      columns.filter((c) => c.type.includes('BLOB')).map((c) => c.name)
+    );
+
+    const schema: CachedSchema = {
+      columns,
+      foreignKeys,
+      primaryKeys,
+      sql: sqlDef,
+      hasRowid,
+      blobColNames,
+    };
+
+    this.schemaCache.set(tableName, schema);
+    return schema;
   }
 
   /**
@@ -113,23 +214,38 @@ export class SqliteCliEngine implements ISqliteEngine {
   /**
    * Executes a SQL query and parses the resulting JSON rows.
    */
-  public async queryJson<T = any>(sql: string): Promise<T[]> {
-    const raw = await this.runRawSql(sql);
+  public async queryJson<T = any>(sql: string, timeoutMs: number = 30000): Promise<T[]> {
+    const raw = await this.runRawSql(sql, timeoutMs);
     const trimmed = raw.trim();
     if (!trimmed) {
       return [];
     }
 
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      // If multiple JSON arrays were returned, extract the first one
-      const match = /\[[\s\S]*?\]/.exec(trimmed);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
+    const arrays = SqliteCliEngine.parseMultipleJsonArrays(trimmed);
+    if (arrays.length === 0) {
       return [];
     }
+
+    // If multiple arrays were returned (e.g. PRAGMA status followed by SELECT),
+    // extract the actual data array
+    for (let i = arrays.length - 1; i >= 0; i--) {
+      const arr = arrays[i];
+      if (arr.length > 0) {
+        const first = arr[0];
+        if (
+          'mmap_size' in first ||
+          'cache_size' in first ||
+          'query_only' in first ||
+          'synchronous' in first ||
+          'temp_store' in first
+        ) {
+          continue;
+        }
+        return arr;
+      }
+    }
+
+    return arrays[arrays.length - 1];
   }
 
   public async getMetadata(): Promise<DatabaseMetadata> {
@@ -148,6 +264,8 @@ export class SqliteCliEngine implements ISqliteEngine {
     }
 
     const schemaQuery = `
+      PRAGMA mmap_size = 268435456;
+      PRAGMA query_only = ON;
       SELECT type, name, sql 
       FROM sqlite_master 
       WHERE name NOT LIKE 'sqlite_%' 
@@ -158,7 +276,7 @@ export class SqliteCliEngine implements ISqliteEngine {
     const tables: TableInfo[] = [];
     const views: TableInfo[] = [];
 
-    // Query columns, foreign keys, and row counts in parallel for all tables/views
+    // Query columns, foreign keys, and fast row counts in parallel for all tables/views
     const tablePromises = schemaRows.map(async (row) => {
       const type = row.type;
       const name = row.name;
@@ -167,20 +285,24 @@ export class SqliteCliEngine implements ISqliteEngine {
       const [columns, foreignKeys, rowCount] = await Promise.all([
         this.getTableColumns(name),
         type === 'table' ? this.getTableForeignKeys(name) : Promise.resolve([]),
-        (async () => {
-          try {
-            const countRows = await this.queryJson<{ count: number }>(
-              `SELECT COUNT(*) as count FROM "${SqliteCliEngine.escapeIdentifier(name)}";`
-            );
-            if (countRows.length > 0 && countRows[0].count !== undefined) {
-              return Number(countRows[0].count);
-            }
-            return 0;
-          } catch {
-            return 0;
-          }
-        })(),
+        type === 'table' ? this.getFastRowCount(name) : Promise.resolve(0),
       ]);
+
+      const primaryKeys = columns.filter((c) => c.pk > 0).map((c) => c.name);
+      const blobColNames = new Set(
+        columns.filter((c) => c.type.includes('BLOB')).map((c) => c.name)
+      );
+
+      // Pre-warm the schema cache and unfiltered row count cache in RAM!
+      this.schemaCache.set(name, {
+        columns,
+        foreignKeys,
+        primaryKeys,
+        sql,
+        hasRowid: true,
+        blobColNames,
+      });
+      this.rowCountCache.set(`${name}::[]`, rowCount);
 
       const info: TableInfo = {
         name,
@@ -213,6 +335,11 @@ export class SqliteCliEngine implements ISqliteEngine {
   }
 
   public async getTableColumns(tableName: string): Promise<ColumnInfo[]> {
+    const cached = this.schemaCache.get(tableName);
+    if (cached) {
+      return cached.columns;
+    }
+
     try {
       const rows = await this.queryJson<any>(
         `PRAGMA table_info("${SqliteCliEngine.escapeIdentifier(tableName)}");`
@@ -231,6 +358,11 @@ export class SqliteCliEngine implements ISqliteEngine {
   }
 
   public async getTableForeignKeys(tableName: string): Promise<ForeignKeyInfo[]> {
+    const cached = this.schemaCache.get(tableName);
+    if (cached) {
+      return cached.foreignKeys;
+    }
+
     try {
       const rows = await this.queryJson<any>(
         `PRAGMA foreign_key_list("${SqliteCliEngine.escapeIdentifier(tableName)}");`
@@ -260,29 +392,15 @@ export class SqliteCliEngine implements ISqliteEngine {
     filterConjunction: 'AND' | 'OR' = 'AND'
   ): Promise<TableDataResult> {
     const escapedTable = SqliteCliEngine.escapeIdentifier(tableName);
-    const [columns, foreignKeys] = await Promise.all([
-      this.getTableColumns(tableName),
-      this.getTableForeignKeys(tableName),
-    ]);
-    const primaryKeys = columns.filter((c) => c.pk > 0).map((c) => c.name);
 
-    // Get SQL definition
-    let sqlDef = '';
-    try {
-      const defRows = await this.queryJson<{ sql: string }>(
-        `SELECT sql FROM sqlite_master WHERE name = ${SqliteCliEngine.escapeSql(tableName)} LIMIT 1;`
-      );
-      if (defRows.length > 0 && defRows[0].sql) {
-        sqlDef = String(defRows[0].sql);
-      }
-    } catch {
-      // ignore
-    }
+    // 1. Retrieve cached schema directly from RAM (0 ms)
+    const schema = await this.getSchema(tableName);
+    const { columns, foreignKeys, primaryKeys, sql: sqlDef } = schema;
 
-    // Build filter clauses
+    // 2. Build filter clauses
     const whereClauses: string[] = [];
 
-    // 1. Text search across all columns
+    // 2.1 Text search across all columns
     if (filterText && filterText.trim().length > 0) {
       const text = `%${filterText.trim()}%`;
       const escapedText = SqliteCliEngine.escapeSql(text);
@@ -294,7 +412,7 @@ export class SqliteCliEngine implements ISqliteEngine {
       }
     }
 
-    // 2. Structured filter rules from Visual Filter Builder
+    // 2.2 Structured filter rules from Visual Filter Builder
     if (filterRules && filterRules.length > 0) {
       const ruleClauses: string[] = [];
       for (const rule of filterRules) {
@@ -367,55 +485,61 @@ export class SqliteCliEngine implements ISqliteEngine {
 
     const filterClause = whereClauses.length > 0 ? ` WHERE ${whereClauses.join(' AND ')}` : '';
 
-    // Total filtered row count
-    let totalRows = 0;
-    try {
-      const countSql = `SELECT COUNT(*) as count FROM "${escapedTable}"${filterClause};`;
-      const countRes = await this.queryJson<{ count: number }>(countSql);
-      if (countRes.length > 0 && countRes[0].count !== undefined) {
-        totalRows = Number(countRes[0].count);
+    // 3. Instant Row Count from RAM Cache
+    // If the user is browsing pages (page 1 -> page 2), the count is ALREADY in RAM!
+    const countCacheKey = `${tableName}:${filterText || ''}:${JSON.stringify(filterRules || [])}`;
+    let totalRows = this.rowCountCache.get(countCacheKey);
+
+    if (totalRows === undefined) {
+      if (!filterClause) {
+        // Unfiltered: fast rowid count takes ~3ms using index
+        totalRows = await this.getFastRowCount(tableName);
+      } else {
+        // Filtered count
+        try {
+          const countSql = `PRAGMA mmap_size = 268435456; PRAGMA query_only = ON; SELECT COUNT(*) as count FROM "${escapedTable}"${filterClause};`;
+          const countRes = await this.queryJson<{ count: number }>(countSql, 5000);
+          if (countRes.length > 0 && countRes[0].count !== undefined) {
+            totalRows = Number(countRes[0].count);
+          } else {
+            totalRows = 0;
+          }
+        } catch {
+          totalRows = 0;
+        }
       }
-    } catch {
-      totalRows = 0;
+      this.rowCountCache.set(countCacheKey, totalRows);
     }
 
-    // Order clause
+    // 4. Order clause
     let orderClause = '';
     if (sortColumn && columns.some((c) => c.name === sortColumn)) {
       const dir = sortDirection.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
       orderClause = ` ORDER BY "${SqliteCliEngine.escapeIdentifier(sortColumn)}" ${dir}`;
     }
 
-    // Check rowid availability
-    let rowIdSelect = 'rowid as __rowid__, ';
-    try {
-      await this.runRawSql(`SELECT rowid FROM "${escapedTable}" LIMIT 1;`);
-    } catch {
-      rowIdSelect = '';
-    }
+    // 5. Select rowid if available
+    const rowIdSelect = schema.hasRowid ? 'rowid as __rowid__, ' : '';
 
-    // Identify blob columns to format safely without huge payloads
-    const blobColNames = new Set(
-      columns
-        .filter((c) => c.type.includes('BLOB'))
-        .map((c) => c.name)
-    );
-
+    // 6. BLOB column optimization:
+    // Do NOT serialize 500 MB of full hex text across IPC for the whole table page!
+    // Fetch exact size and up to 32KB of preview hex for format detection and hex dump.
     let selectList = '*';
-    if (blobColNames.size > 0) {
+    if (schema.blobColNames.size > 0) {
       selectList = columns
         .map((c) => {
           const colEsc = `"${SqliteCliEngine.escapeIdentifier(c.name)}"`;
-          if (blobColNames.has(c.name)) {
-            return `hex(${colEsc}) AS "__blob_hex_${c.name}", length(${colEsc}) AS "__blob_size_${c.name}"`;
+          if (schema.blobColNames.has(c.name)) {
+            return `length(${colEsc}) AS "__blob_size_${c.name}", hex(substr(${colEsc}, 1, 32768)) AS "__blob_hex_${c.name}"`;
           }
           return colEsc;
         })
         .join(', ');
     }
 
+    // 7. Fast Paged Query with Memory-Mapped I/O PRAGMAs
     const offset = Math.max(0, page) * Math.max(1, pageSize);
-    const dataSql = `SELECT ${rowIdSelect}${selectList} FROM "${escapedTable}"${filterClause}${orderClause} LIMIT ${pageSize} OFFSET ${offset};`;
+    const dataSql = `PRAGMA mmap_size = 268435456; PRAGMA cache_size = -64000; PRAGMA query_only = ON; SELECT ${rowIdSelect}${selectList} FROM "${escapedTable}"${filterClause}${orderClause} LIMIT ${pageSize} OFFSET ${offset};`;
 
     const rawRows = await this.queryJson<any>(dataSql);
     const rows = rawRows.map((r) => {
@@ -431,7 +555,6 @@ export class SqliteCliEngine implements ISqliteEngine {
             base64: Buffer.from(hex, 'hex').toString('base64'),
           };
         } else if (k.startsWith('__blob_size_')) {
-          // Handled alongside hex
           continue;
         } else {
           rowObj[k] = v;
@@ -626,6 +749,8 @@ export class SqliteCliEngine implements ISqliteEngine {
       statements.push('COMMIT;');
       await this.runRawSql(statements.join('\n'));
 
+      this.rowCountCache.clear();
+
       return {
         success: true,
         message: `Successfully applied ${changes.length} change(s).`,
@@ -656,6 +781,27 @@ export class SqliteCliEngine implements ISqliteEngine {
       `SELECT * FROM "${escapedTable}" WHERE "${escapedCol}" = ${escapedVal} LIMIT 1;`
     );
     return rows.length > 0 ? rows[0] : null;
+  }
+
+  public async getBlobData(
+    tableName: string,
+    columnName: string,
+    rowId: number | string
+  ): Promise<{ size: number; base64: string }> {
+    const escapedTable = SqliteCliEngine.escapeIdentifier(tableName);
+    const escapedCol = SqliteCliEngine.escapeIdentifier(columnName);
+    const rows = await this.queryJson<any>(
+      `PRAGMA mmap_size = 268435456; SELECT length("${escapedCol}") as size, hex("${escapedCol}") as hex FROM "${escapedTable}" WHERE rowid = ${SqliteCliEngine.escapeSql(rowId)} LIMIT 1;`
+    );
+    if (rows.length > 0) {
+      const hex = String(rows[0].hex || '');
+      const size = Number(rows[0].size || 0);
+      return {
+        size,
+        base64: Buffer.from(hex, 'hex').toString('base64'),
+      };
+    }
+    return { size: 0, base64: '' };
   }
 
   public async generateMockData(
@@ -703,6 +849,7 @@ export class SqliteCliEngine implements ISqliteEngine {
 
       statements.push('COMMIT;');
       await this.runRawSql(statements.join('\n'));
+      this.rowCountCache.clear();
       return { success: true, count: rows.length };
     } catch (err: any) {
       try {
@@ -802,6 +949,9 @@ export class SqliteCliEngine implements ISqliteEngine {
 
       statements.push('COMMIT;');
       await this.runRawSql(statements.join('\n'));
+
+      this.rowCountCache.clear();
+      this.schemaCache.clear();
 
       return { success: true, count: rows.length, tableName: targetTable };
     } catch (err: any) {

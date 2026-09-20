@@ -79,6 +79,11 @@ export interface ISqliteEngine {
     targetColumn: string,
     value: any
   ): Promise<any> | any;
+  getBlobData?(
+    tableName: string,
+    columnName: string,
+    rowId: number | string
+  ): Promise<{ size: number; base64: string }>;
   generateMockData(
     tableName: string,
     count?: number

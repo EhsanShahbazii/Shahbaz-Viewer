@@ -561,6 +561,23 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
             break;
           }
 
+          case 'fetchBlobData': {
+            const { requestId, tableName, columnName, rowId } = message.payload;
+            try {
+              const blob = await engine.getBlobData(tableName, columnName, rowId);
+              webviewPanel.webview.postMessage({
+                type: 'blobDataResult',
+                payload: { requestId, blob },
+              });
+            } catch (err: any) {
+              webviewPanel.webview.postMessage({
+                type: 'blobDataResult',
+                payload: { requestId, blob: { size: 0, base64: '' }, error: err.message },
+              });
+            }
+            break;
+          }
+
           case 'generateMockData': {
             const { tableName, count, insertDirectly } = message.payload;
             try {

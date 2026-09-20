@@ -160,6 +160,15 @@ export type WebviewToHostMessage =
       payload: ImportOptions;
     }
   | {
+      type: 'fetchBlobData';
+      payload: {
+        requestId: string;
+        tableName: string;
+        columnName: string;
+        rowId: number | string;
+      };
+    }
+  | {
       type: 'exportImage';
       payload: {
         fileName: string;
@@ -171,6 +180,14 @@ export type WebviewToHostMessage =
 
 // Messages Extension Host sends to Webview
 export type HostToWebviewMessage =
+  | {
+      type: 'blobDataResult';
+      payload: {
+        requestId: string;
+        blob: { size: number; base64: string };
+        error?: string;
+      };
+    }
   | {
       type: 'init';
       payload: DatabaseMetadata;

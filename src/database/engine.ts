@@ -236,6 +236,17 @@ export class SqliteEngine implements ISqliteEngine {
     return this.activeEngine.getForeignKeyRecord(targetTable, targetColumn, value);
   }
 
+  public async getBlobData(
+    tableName: string,
+    columnName: string,
+    rowId: number | string
+  ): Promise<{ size: number; base64: string }> {
+    if (this.activeEngine && 'getBlobData' in this.activeEngine && typeof (this.activeEngine as any).getBlobData === 'function') {
+      return (this.activeEngine as any).getBlobData(tableName, columnName, rowId);
+    }
+    return { size: 0, base64: '' };
+  }
+
   public async generateMockData(
     tableName: string,
     count: number = 10
