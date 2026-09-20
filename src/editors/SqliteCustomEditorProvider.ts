@@ -7,13 +7,14 @@ import { WebviewToHostMessage } from '../common/messages';
 import { getExportTimestamp, insertTimestamp } from '../common/timestamp';
 
 export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorProvider {
-  public static readonly viewType = 'shahbazViewer.editor';
+  public static readonly viewType = 'sqliteViewerStudio.editor';
+  public static readonly legacyViewType = 'shahbazViewer.editor';
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new SqliteCustomEditorProvider(context);
-    return vscode.window.registerCustomEditorProvider(
+    const d1 = vscode.window.registerCustomEditorProvider(
       SqliteCustomEditorProvider.viewType,
       provider,
       {
@@ -23,6 +24,17 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
         supportsMultipleEditorsPerDocument: false,
       }
     );
+    const d2 = vscode.window.registerCustomEditorProvider(
+      SqliteCustomEditorProvider.legacyViewType,
+      provider,
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true,
+        },
+        supportsMultipleEditorsPerDocument: false,
+      }
+    );
+    return vscode.Disposable.from(d1, d2);
   }
 
   public async openCustomDocument(
@@ -69,9 +81,9 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     // Read and load database
     const loadDb = async (preferredTable?: string) => {
       try {
-        const customSqlitePath = vscode.workspace
-          .getConfiguration('shahbazViewer')
-          .get<string>('sqlite3Path');
+        const customSqlitePath =
+          vscode.workspace.getConfiguration('sqliteViewerStudio').get<string>('sqlite3Path') ||
+          vscode.workspace.getConfiguration('shahbazViewer').get<string>('sqlite3Path');
 
         if (document.uri.scheme === 'file') {
           // Direct disk load without reading multi-gigabyte files into Node.js Buffer
@@ -142,10 +154,17 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
           ? `Failed to open SQLite database: The database file may be too large to allocate in WebAssembly memory. (${err.message})`
           : `Failed to open SQLite database: ${err.message}`;
 
-        if (err?.message && err.message.includes('shahbazViewer.sqlite3Path')) {
+        if (
+          err?.message &&
+          (err.message.includes('sqliteViewerStudio.sqlite3Path') ||
+            err.message.includes('shahbazViewer.sqlite3Path'))
+        ) {
           vscode.window.showErrorMessage(errorMsg, 'Open Settings').then((sel) => {
             if (sel === 'Open Settings') {
-              vscode.commands.executeCommand('workbench.action.openSettings', 'shahbazViewer.sqlite3Path');
+              vscode.commands.executeCommand(
+                'workbench.action.openSettings',
+                'sqliteViewerStudio.sqlite3Path'
+              );
             }
           });
         } else {

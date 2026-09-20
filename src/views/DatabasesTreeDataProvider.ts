@@ -36,8 +36,8 @@ export class DatabaseTreeItem extends BaseTreeItem {
 
     this.command = {
       command: 'vscode.openWith',
-      title: 'Open in Shahbaz Viewer',
-      arguments: [this.uri, 'shahbazViewer.editor'],
+      title: 'Open in SQLite Studio',
+      arguments: [this.uri, 'sqliteViewerStudio.editor'],
     };
   }
 

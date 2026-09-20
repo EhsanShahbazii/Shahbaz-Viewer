@@ -495,7 +495,7 @@ export const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-vscode-bg text-vscode-fg">
       {/* Top Header */}
       <Header
-        databaseName={metadata?.name || 'Shahbaz Viewer'}
+        databaseName={metadata?.name || 'SQLite Viewer & Studio'}
         activeTable={activeTable}
         viewMode={viewMode}
         onViewModeChange={setViewMode}

@@ -1,8 +1,8 @@
 {
-  "name": "shahbaz-viewer",
-  "displayName": "Shahbaz Viewer",
-  "description": "The majestic, ultra-fast SQLite Database Studio & Inspector for VS Code. High-speed virtualized DataGrid, interactive ER diagrams, visual query charts, full SQL Studio with EXPLAIN query plan advisor, schema diffing, mock data generator, and CSV/JSON import wizards.",
-  "version": "1.0.4",
+  "name": "sqlite-viewer-studio",
+  "displayName": "SQLite Viewer & Database Studio",
+  "description": "Ultra-fast SQLite database viewer & studio. Instant pagination on 7GB+ databases, interactive ER diagrams, visual query charts, virtualized DataGrid, and SQL Studio.",
+  "version": "1.1.0",
   "publisher": "ehsanshahbazi",
   "author": {
     "name": "Ehsan Shahbazi",
@@ -28,56 +28,58 @@
   ],
   "keywords": [
     "sqlite",
+    "sqlite3",
+    "sqlite viewer",
+    "database viewer",
+    "sqlite studio",
+    "sql viewer",
     "database",
-    "viewer",
+    "data-grid",
+    "er-diagram",
+    "table-viewer",
+    "db-viewer",
     "sql",
     "studio",
-    "er-diagram",
-    "data-grid",
-    "charts",
-    "csv-import",
-    "schema-diff",
-    "mock-data",
-    "orm-generator",
-    "shahbaz",
     "cursor"
   ],
   "main": "./dist/extension.js",
   "browser": "./dist/extension.js",
   "activationEvents": [
+    "onView:sqliteViewerStudio.databasesView",
     "onView:shahbazViewer.databasesView",
+    "onCustomEditor:sqliteViewerStudio.editor",
     "onCustomEditor:shahbazViewer.editor",
-    "onCommand:shahbazViewer.openDatabase",
-    "onCommand:shahbazViewer.refreshDatabases"
+    "onCommand:sqliteViewerStudio.openDatabase",
+    "onCommand:sqliteViewerStudio.refreshDatabases"
   ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "shahbazViewer",
-          "title": "Shahbaz Viewer",
+          "id": "sqliteViewerStudio",
+          "title": "SQLite Studio",
           "icon": "resources/icon.svg"
         }
       ]
     },
     "views": {
-      "shahbazViewer": [
+      "sqliteViewerStudio": [
         {
-          "id": "shahbazViewer.databasesView",
+          "id": "sqliteViewerStudio.databasesView",
           "name": "SQLite Databases"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "shahbazViewer.databasesView",
-        "contents": "No SQLite databases found in workspace.\n[Open Database File](command:shahbazViewer.openDatabase)"
+        "view": "sqliteViewerStudio.databasesView",
+        "contents": "No SQLite databases found in workspace.\n[Open Database File](command:sqliteViewerStudio.openDatabase)"
       }
     ],
     "customEditors": [
       {
-        "viewType": "shahbazViewer.editor",
-        "displayName": "Shahbaz Viewer",
+        "viewType": "sqliteViewerStudio.editor",
+        "displayName": "SQLite Viewer & Studio",
         "selector": [
           { "filenamePattern": "*.db" },
           { "filenamePattern": "*.sqlite" },
@@ -91,22 +93,22 @@
     ],
     "commands": [
       {
-        "command": "shahbazViewer.openDatabase",
-        "title": "Shahbaz Viewer: Open SQLite Database",
-        "category": "Shahbaz Viewer",
+        "command": "sqliteViewerStudio.openDatabase",
+        "title": "SQLite Studio: Open Database",
+        "category": "SQLite Studio",
         "icon": "$(database)"
       },
       {
-        "command": "shahbazViewer.refreshDatabases",
+        "command": "sqliteViewerStudio.refreshDatabases",
         "title": "Refresh Databases",
-        "category": "Shahbaz Viewer",
+        "category": "SQLite Studio",
         "icon": "$(refresh)"
       }
     ],
     "configuration": {
-      "title": "Shahbaz Viewer",
+      "title": "SQLite Viewer & Studio",
       "properties": {
-        "shahbazViewer.sqlite3Path": {
+        "sqliteViewerStudio.sqlite3Path": {
           "type": "string",
           "default": "",
           "description": "Custom path to the sqlite3 command line executable. Leave empty to automatically discover sqlite3 from system PATH and default directories."
@@ -116,20 +118,20 @@
     "menus": {
       "explorer/context": [
         {
-          "command": "shahbazViewer.openDatabase",
+          "command": "sqliteViewerStudio.openDatabase",
           "when": "resourceExt == .db || resourceExt == .sqlite || resourceExt == .sqlite3 || resourceExt == .db3 || resourceExt == .s3db || resourceExt == .sl3",
           "group": "navigation"
         }
       ],
       "view/title": [
         {
-          "command": "shahbazViewer.openDatabase",
-          "when": "view == shahbazViewer.databasesView",
+          "command": "sqliteViewerStudio.openDatabase",
+          "when": "view == sqliteViewerStudio.databasesView",
           "group": "navigation"
         },
         {
-          "command": "shahbazViewer.refreshDatabases",
-          "when": "view == shahbazViewer.databasesView",
+          "command": "sqliteViewerStudio.refreshDatabases",
+          "when": "view == sqliteViewerStudio.databasesView",
           "group": "navigation"
         }
       ]

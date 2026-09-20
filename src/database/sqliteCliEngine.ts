@@ -189,7 +189,7 @@ export class SqliteCliEngine implements ISqliteEngine {
         if (err.code === 'ENOENT') {
           reject(
             new Error(
-              `The sqlite3 executable could not be found at "${this.sqlite3Path}". Please verify that sqlite3 is installed or configure its path in settings (shahbazViewer.sqlite3Path).`
+              `The sqlite3 executable could not be found at "${this.sqlite3Path}". Please verify that sqlite3 is installed or configure its path in settings (sqliteViewerStudio.sqlite3Path).`
             )
           );
         } else {

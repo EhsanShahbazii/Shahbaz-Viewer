@@ -9,12 +9,14 @@ export function activate(context: vscode.ExtensionContext) {
   // Register Activity Bar Tree Data Provider for SQLite Databases
   const databasesProvider = new DatabasesTreeDataProvider();
   context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('sqliteViewerStudio.databasesView', databasesProvider),
     vscode.window.registerTreeDataProvider('shahbazViewer.databasesView', databasesProvider)
   );
 
   // Command to refresh databases list
   const refreshHandler = () => databasesProvider.refresh();
   context.subscriptions.push(
+    vscode.commands.registerCommand('sqliteViewerStudio.refreshDatabases', refreshHandler),
     vscode.commands.registerCommand('shahbazViewer.refreshDatabases', refreshHandler),
     vscode.commands.registerCommand('sqliteSuperViewer.refreshDatabases', refreshHandler)
   );
@@ -25,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!targetUri) {
       const fileUris = await vscode.window.showOpenDialog({
         canSelectMany: false,
-        openLabel: 'Open in Shahbaz Viewer',
+        openLabel: 'Open in SQLite Studio',
         filters: {
           'SQLite Databases': ['db', 'sqlite', 'sqlite3', 'db3', 's3db', 'sl3'],
           'All Files': ['*'],
@@ -46,6 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('sqliteViewerStudio.openDatabase', openDbHandler),
     vscode.commands.registerCommand('shahbazViewer.openDatabase', openDbHandler),
     vscode.commands.registerCommand('sqliteSuperViewer.openDatabase', openDbHandler)
   );

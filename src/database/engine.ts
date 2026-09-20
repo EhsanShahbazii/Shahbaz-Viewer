@@ -119,7 +119,7 @@ export class SqliteEngine implements ISqliteEngine {
         throw new Error(
           `Database file size (${(stats.size / (1024 * 1024 * 1024)).toFixed(2)} GiB) exceeds 2 GiB. ` +
             `SQLite databases of this size cannot be allocated into WebAssembly memory. ` +
-            `Please install the sqlite3 CLI tool or specify its path in Settings (shahbazViewer.sqlite3Path) to query directly from disk.`
+            `Please install the sqlite3 CLI tool or specify its path in Settings (sqliteViewerStudio.sqlite3Path) to query directly from disk.`
         );
       }
 
