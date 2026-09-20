@@ -69,15 +69,19 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     // Read and load database
     const loadDb = async (preferredTable?: string) => {
       try {
-        let fileData: Uint8Array;
+        const customSqlitePath = vscode.workspace
+          .getConfiguration('shahbazViewer')
+          .get<string>('sqlite3Path');
+
         if (document.uri.scheme === 'file') {
-          fileData = fs.readFileSync(document.uri.fsPath);
+          // Direct disk load without reading multi-gigabyte files into Node.js Buffer
+          await engine.load(document.uri.fsPath, undefined, customSqlitePath);
         } else {
-          fileData = await vscode.workspace.fs.readFile(document.uri);
+          const fileData = await vscode.workspace.fs.readFile(document.uri);
+          await engine.load(document.uri.fsPath, fileData, customSqlitePath);
         }
 
-        engine.load(fileData, document.uri.fsPath);
-        const metadata = engine.getMetadata();
+        const metadata = await engine.getMetadata();
         webviewPanel.webview.postMessage({
           type: 'init',
           payload: metadata,
@@ -112,7 +116,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                   filterConjunction: 'AND' as const,
                 };
 
-          const tableData = engine.getTableData(
+          const tableData = await engine.getTableData(
             targetTable,
             params.page,
             params.pageSize,
@@ -137,7 +141,17 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
         const errorMsg = isAllocFail
           ? `Failed to open SQLite database: The database file may be too large to allocate in WebAssembly memory. (${err.message})`
           : `Failed to open SQLite database: ${err.message}`;
-        vscode.window.showErrorMessage(errorMsg);
+
+        if (err?.message && err.message.includes('shahbazViewer.sqlite3Path')) {
+          vscode.window.showErrorMessage(errorMsg, 'Open Settings').then((sel) => {
+            if (sel === 'Open Settings') {
+              vscode.commands.executeCommand('workbench.action.openSettings', 'shahbazViewer.sqlite3Path');
+            }
+          });
+        } else {
+          vscode.window.showErrorMessage(errorMsg);
+        }
+
         webviewPanel.webview.postMessage({
           type: 'error',
           payload: { message: errorMsg },
@@ -194,7 +208,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
               filterRules,
               filterConjunction,
             } = message.payload;
-            const data = engine.getTableData(
+            const data = await engine.getTableData(
               tableName,
               page,
               pageSize,
@@ -218,7 +232,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'executeQuery': {
             const { query } = message.payload;
-            const result = engine.executeQuery(query);
+            const result = await engine.executeQuery(query);
             webviewPanel.webview.postMessage({
               type: 'queryResult',
               payload: {
@@ -231,7 +245,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'executeChartQuery': {
             const { query, chartId } = message.payload;
-            const result = engine.executeQuery(query);
+            const result = await engine.executeQuery(query);
             webviewPanel.webview.postMessage({
               type: 'chartQueryResult',
               payload: {
@@ -269,7 +283,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'executeImport': {
             const options = message.payload;
-            const res = engine.importData(options);
+            const res = await engine.importData(options);
             webviewPanel.webview.postMessage({
               type: 'importResult',
               payload: res,
@@ -280,7 +294,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                 `Successfully imported ${res.count.toLocaleString()} rows into "${res.tableName}".`
               );
               // Send refreshed database metadata
-              const refreshedMeta = engine.getMetadata();
+              const refreshedMeta = await engine.getMetadata();
               webviewPanel.webview.postMessage({
                 type: 'init',
                 payload: refreshedMeta,
@@ -290,7 +304,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                 currentTableParams && currentTableParams.tableName === res.tableName
                   ? currentTableParams
                   : { tableName: res.tableName, page: 0, pageSize: 50 };
-              const refreshedData = engine.getTableData(
+              const refreshedData = await engine.getTableData(
                 res.tableName,
                 params.page,
                 params.pageSize,
@@ -319,7 +333,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'explainQuery': {
             const { query } = message.payload;
-            const result = engine.explainQuery(query);
+            const result = await engine.explainQuery(query);
             webviewPanel.webview.postMessage({
               type: 'explainResult',
               payload: {
@@ -332,7 +346,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
 
           case 'commitChanges': {
             const { tableName, changes } = message.payload;
-            const res = engine.commitChanges(tableName, changes);
+            const res = await engine.commitChanges(tableName, changes);
             webviewPanel.webview.postMessage({
               type: 'commitResult',
               payload: res,
@@ -347,7 +361,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                 currentTableParams && currentTableParams.tableName === tableName
                   ? currentTableParams
                   : { tableName, page: 0, pageSize: 50 };
-              const refreshed = engine.getTableData(
+              const refreshed = await engine.getTableData(
                 tableName,
                 params.page,
                 params.pageSize,
@@ -375,9 +389,9 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
           case 'exportData': {
             const { tableName, format } = message.payload;
             // Fetch all rows for export
-            const allData = engine.getTableData(tableName, 0, 100000);
+            const allData = await engine.getTableData(tableName, 0, 100000);
             let content = '';
-            let fileExt = format;
+            let fileExt: string = format;
             if (format === 'markdown') {fileExt = 'md';}
             if (format === 'ts') {fileExt = 'ts';}
 
@@ -533,7 +547,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
           case 'fetchForeignKeyRecord': {
             const { requestId, targetTable, targetColumn, value } = message.payload;
             try {
-              const record = engine.getForeignKeyRecord(targetTable, targetColumn, value);
+              const record = await engine.getForeignKeyRecord(targetTable, targetColumn, value);
               webviewPanel.webview.postMessage({
                 type: 'foreignKeyRecordResult',
                 payload: { requestId, record },
@@ -550,10 +564,10 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
           case 'generateMockData': {
             const { tableName, count, insertDirectly } = message.payload;
             try {
-              const generatedRows = engine.generateMockData(tableName, count);
+              const generatedRows = await engine.generateMockData(tableName, count);
 
               if (insertDirectly) {
-                const insertRes = engine.insertMockData(tableName, generatedRows);
+                const insertRes = await engine.insertMockData(tableName, generatedRows);
                 if (insertRes.success) {
                   vscode.window.showInformationMessage(
                     `Successfully inserted ${insertRes.count} mock rows into "${tableName}".`
@@ -563,7 +577,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
                     currentTableParams && currentTableParams.tableName === tableName
                       ? currentTableParams
                       : { tableName, page: 0, pageSize: 50 };
-                  const refreshed = engine.getTableData(
+                  const refreshed = await engine.getTableData(
                     tableName,
                     params.page,
                     params.pageSize,

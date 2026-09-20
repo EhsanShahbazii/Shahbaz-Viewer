@@ -1,5 +1,8 @@
-import { Database } from 'sql.js';
 import { ColumnInfo, ForeignKeyInfo } from '../common/messages';
+
+export interface SqlQueryExecutor {
+  exec(sql: string): { columns?: string[]; values?: any[][] }[];
+}
 
 const FIRST_NAMES = [
   'Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Ethan', 'Sophia', 'Lucas', 'Isabella', 'Mason',
@@ -55,7 +58,7 @@ function generateUuid(): string {
 
 export class MockDataGenerator {
   public static generateRows(
-    db: Database,
+    db: SqlQueryExecutor,
     tableName: string,
     columns: ColumnInfo[],
     foreignKeys: ForeignKeyInfo[],
@@ -66,7 +69,7 @@ export class MockDataGenerator {
     for (const fk of foreignKeys) {
       try {
         const res = db.exec(`SELECT DISTINCT "${fk.to}" FROM "${fk.table}" LIMIT 100;`);
-        if (res.length > 0 && res[0].values.length > 0) {
+        if (res.length > 0 && res[0].values && res[0].values.length > 0) {
           const vals = res[0].values.map((v) => v[0]);
           fkValuesMap.set(fk.from, vals);
         }
@@ -86,7 +89,7 @@ export class MockDataGenerator {
     if (hasSingleIntegerPk) {
       try {
         const idRes = db.exec(`SELECT MAX("${primaryKeyCols[0].name}") FROM "${tableName}";`);
-        if (idRes.length > 0 && idRes[0].values.length > 0 && idRes[0].values[0][0] !== null) {
+        if (idRes.length > 0 && idRes[0].values && idRes[0].values.length > 0 && idRes[0].values[0][0] !== null) {
           nextId = Number(idRes[0].values[0][0]) + 1;
         }
       } catch {

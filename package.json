@@ -2,7 +2,7 @@
   "name": "shahbaz-viewer",
   "displayName": "Shahbaz Viewer",
   "description": "The majestic, ultra-fast SQLite Database Studio & Inspector for VS Code. High-speed virtualized DataGrid, interactive ER diagrams, visual query charts, full SQL Studio with EXPLAIN query plan advisor, schema diffing, mock data generator, and CSV/JSON import wizards.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "ehsanshahbazi",
   "author": {
     "name": "Ehsan Shahbazi",
@@ -103,6 +103,16 @@
         "icon": "$(refresh)"
       }
     ],
+    "configuration": {
+      "title": "Shahbaz Viewer",
+      "properties": {
+        "shahbazViewer.sqlite3Path": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to the sqlite3 command line executable. Leave empty to automatically discover sqlite3 from system PATH and default directories."
+        }
+      }
+    },
     "menus": {
       "explorer/context": [
         {
