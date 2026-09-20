@@ -2,7 +2,7 @@
   "name": "sqlite-viewer-studio",
   "displayName": "SQLite Viewer & Database Studio",
   "description": "Ultra-fast SQLite database viewer & studio. Instant pagination on 7GB+ databases, interactive ER diagrams, visual query charts, virtualized DataGrid, and SQL Studio.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "ehsanshahbazi",
   "author": {
     "name": "Ehsan Shahbazi",
