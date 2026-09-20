@@ -66,6 +66,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     const wasmDir = path.join(this.context.extensionPath, 'dist');
     await SqliteEngine.init(wasmDir);
 
+    let isDisposed = false;
     let currentActiveTable: string | undefined;
     let currentTableParams: {
       tableName: string;
@@ -148,6 +149,24 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
             },
           });
         }
+
+        // Asynchronously calculate row counts in progressive batches in background
+        if (engine.countTablesInBackground) {
+          engine
+            .countTablesInBackground(
+              (batchCounts) => {
+                if (isDisposed) return;
+                try {
+                  webviewPanel.webview.postMessage({
+                    type: 'tableRowCounts',
+                    payload: batchCounts,
+                  });
+                } catch {}
+              },
+              () => isDisposed
+            )
+            .catch(() => {});
+        }
       } catch (err: any) {
         const isAllocFail = String(err?.message || '').toLowerCase().includes('allocation failed');
         const errorMsg = isAllocFail
@@ -192,6 +211,7 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
     });
 
     webviewPanel.onDidDispose(() => {
+      isDisposed = true;
       if (fileChangeDebounceTimer) {
         clearTimeout(fileChangeDebounceTimer);
       }

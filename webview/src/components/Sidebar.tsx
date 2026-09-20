@@ -147,15 +147,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span className="codicon codicon-table text-vscode-info text-xs"></span>
                       <span className="truncate">{t.name}</span>
                     </div>
-                    <span
-                      className={`text-[10px] font-mono-code px-1.5 py-0.2 rounded ${
-                        isActive
-                          ? 'bg-black/20 text-vscode-activeFg'
-                          : 'bg-vscode-badge text-vscode-badgeFg'
-                      }`}
-                    >
-                      {t.rowCount.toLocaleString()}
-                    </span>
+                    {t.rowCount !== undefined && t.rowCount >= 0 ? (
+                      <span
+                        className={`text-[10px] font-mono-code px-1.5 py-0.2 rounded transition-opacity duration-150 ${
+                          isActive
+                            ? 'bg-black/20 text-vscode-activeFg'
+                            : 'bg-vscode-badge text-vscode-badgeFg'
+                        }`}
+                      >
+                        {t.rowCount.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono-code text-vscode-fg/30 px-1">...</span>
+                    )}
                   </button>
                 );
               })}

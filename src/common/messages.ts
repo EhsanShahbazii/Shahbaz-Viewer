@@ -287,6 +287,10 @@ export type HostToWebviewMessage =
       };
     }
   | {
+      type: 'tableRowCounts';
+      payload: Record<string, number>;
+    }
+  | {
       type: 'error';
       payload: { message: string };
     };

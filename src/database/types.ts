@@ -93,4 +93,8 @@ export interface ISqliteEngine {
     rows: Record<string, any>[]
   ): Promise<MockDataResult> | MockDataResult;
   importData(options: ImportOptions): Promise<ImportResult> | ImportResult;
+  countTablesInBackground?(
+    onBatch: (counts: Record<string, number>) => void,
+    isCancelled?: () => boolean
+  ): Promise<void>;
 }

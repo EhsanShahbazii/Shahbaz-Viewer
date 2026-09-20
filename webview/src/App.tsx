@@ -147,6 +147,15 @@ export const App: React.FC = () => {
         setPrimaryKeys(msg.payload.primaryKeys);
         setForeignKeys(msg.payload.foreignKeys);
         setTableSql(msg.payload.sql || '');
+        setMetadata((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            tables: prev.tables.map((t) =>
+              t.name === msg.payload.tableName ? { ...t, rowCount: msg.payload.totalRows } : t
+            ),
+          };
+        });
         if (!isSameTable) {
           setDirtyChanges([]); // Clear dirty changes on table switch
           setFilterText('');
@@ -154,6 +163,19 @@ export const App: React.FC = () => {
           setSortColumn(undefined);
           setSortDirection('asc');
         }
+        break;
+      }
+
+      case 'tableRowCounts': {
+        setMetadata((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            tables: prev.tables.map((t) =>
+              msg.payload[t.name] !== undefined ? { ...t, rowCount: msg.payload[t.name] } : t
+            ),
+          };
+        });
         break;
       }
 

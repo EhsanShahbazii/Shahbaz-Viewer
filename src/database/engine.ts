@@ -273,4 +273,13 @@ export class SqliteEngine implements ISqliteEngine {
     }
     return this.activeEngine.importData(options);
   }
+
+  public async countTablesInBackground(
+    onBatch: (counts: Record<string, number>) => void,
+    isCancelled?: () => boolean
+  ): Promise<void> {
+    if (this.activeEngine && 'countTablesInBackground' in this.activeEngine) {
+      return (this.activeEngine as any).countTablesInBackground(onBatch, isCancelled);
+    }
+  }
 }
