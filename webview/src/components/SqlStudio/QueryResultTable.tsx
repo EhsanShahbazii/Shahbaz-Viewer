@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ColumnInfo } from '../../../src/common/messages';
-import { CellRenderer } from '../DataGrid/CellRenderer';
+import { CellRenderer, isImageLink, isVideoLink } from '../DataGrid/CellRenderer';
 import { AggregateFooter, CellSelection } from '../DataGrid/AggregateFooter';
 import { JsonModal } from '../DataGrid/JsonModal';
 import { BlobModal } from '../DataGrid/BlobModal';
@@ -61,6 +61,8 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
     title: string;
     mediaType: 'image' | 'video';
     url: string;
+    rowIndex?: number;
+    colName?: string;
   }>({
     open: false,
     title: '',
@@ -147,6 +149,57 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
         : String(valB).localeCompare(String(valA));
     });
   }, [filteredRows, sortColumn, sortDirection]);
+
+  // Find all row indices in sortedRows that have media in the active column
+  const mediaRowIndices = useMemo(() => {
+    if (!mediaModal.colName) return [];
+    const indices: number[] = [];
+    sortedRows.forEach((r, idx) => {
+      const val = r[mediaModal.colName!];
+      if (
+        typeof val === 'string' &&
+        (isImageLink(val, mediaModal.colName) || isVideoLink(val, mediaModal.colName))
+      ) {
+        indices.push(idx);
+      }
+    });
+    return indices;
+  }, [sortedRows, mediaModal.colName]);
+
+  const currentMediaPos =
+    mediaModal.rowIndex !== undefined ? mediaRowIndices.indexOf(mediaModal.rowIndex) : -1;
+  const hasPrevMedia = currentMediaPos > 0;
+  const hasNextMedia = currentMediaPos >= 0 && currentMediaPos < mediaRowIndices.length - 1;
+
+  const handlePrevMedia = () => {
+    if (!hasPrevMedia) return;
+    const targetIdx = mediaRowIndices[currentMediaPos - 1];
+    const row = sortedRows[targetIdx];
+    const val = String(row[mediaModal.colName!] || '');
+    setMediaModal({
+      open: true,
+      title: `${mediaModal.colName} (Row #${targetIdx + 1})`,
+      mediaType: isVideoLink(val, mediaModal.colName) ? 'video' : 'image',
+      url: val,
+      rowIndex: targetIdx,
+      colName: mediaModal.colName,
+    });
+  };
+
+  const handleNextMedia = () => {
+    if (!hasNextMedia) return;
+    const targetIdx = mediaRowIndices[currentMediaPos + 1];
+    const row = sortedRows[targetIdx];
+    const val = String(row[mediaModal.colName!] || '');
+    setMediaModal({
+      open: true,
+      title: `${mediaModal.colName} (Row #${targetIdx + 1})`,
+      mediaType: isVideoLink(val, mediaModal.colName) ? 'video' : 'image',
+      url: val,
+      rowIndex: targetIdx,
+      colName: mediaModal.colName,
+    });
+  };
 
   // Auto-calculated column widths based on maximum cell content length
   const autoColWidths = useMemo(() => {
@@ -607,9 +660,11 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
                           onOpenMedia={(media) =>
                             setMediaModal({
                               open: true,
-                              title: `${col.name} (Row #${rowIndex})`,
+                              title: `${col.name} (Row #${rowIndex + 1})`,
                               mediaType: media.type,
                               url: media.url,
+                              rowIndex,
+                              colName: col.name,
                             })
                           }
                         />
@@ -670,6 +725,12 @@ export const QueryResultTable: React.FC<QueryResultTableProps> = ({
           title={mediaModal.title}
           mediaType={mediaModal.mediaType}
           url={mediaModal.url}
+          onPrev={handlePrevMedia}
+          onNext={handleNextMedia}
+          hasPrev={hasPrevMedia}
+          hasNext={hasNextMedia}
+          itemIndex={currentMediaPos >= 0 ? currentMediaPos : undefined}
+          totalItems={mediaRowIndices.length > 0 ? mediaRowIndices.length : undefined}
           onClose={() =>
             setMediaModal({
               open: false,

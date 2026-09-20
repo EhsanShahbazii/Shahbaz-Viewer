@@ -176,6 +176,12 @@ export type WebviewToHostMessage =
         base64Data?: string;
         svgString?: string;
       };
+    }
+  | {
+      type: 'openExternal';
+      payload: {
+        url: string;
+      };
     };
 
 // Messages Extension Host sends to Webview

@@ -597,6 +597,18 @@ export class SqliteCustomEditorProvider implements vscode.CustomReadonlyEditorPr
             break;
           }
 
+          case 'openExternal': {
+            const { url } = message.payload;
+            if (url) {
+              try {
+                await vscode.env.openExternal(vscode.Uri.parse(url));
+              } catch (err: any) {
+                vscode.window.showErrorMessage(`Failed to open link in browser: ${err.message}`);
+              }
+            }
+            break;
+          }
+
           case 'generateMockData': {
             const { tableName, count, insertDirectly } = message.payload;
             try {
