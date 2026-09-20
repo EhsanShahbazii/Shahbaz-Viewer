@@ -9,8 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register Activity Bar Tree Data Provider for SQLite Databases
   const databasesProvider = new DatabasesTreeDataProvider();
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('sqliteViewerStudio.databasesView', databasesProvider),
-    vscode.window.registerTreeDataProvider('shahbazViewer.databasesView', databasesProvider)
+    vscode.window.registerTreeDataProvider('sqliteViewerStudio.databasesView', databasesProvider)
   );
 
   // Command to refresh databases list

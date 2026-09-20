@@ -329,7 +329,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
         {/* Modal Body / Viewer Viewport */}
         <div
           className={`flex-1 relative overflow-hidden bg-vscode-inputBg flex items-center justify-center select-none ${
-            isFullscreen ? 'h-[calc(100vh-80px)]' : 'min-h-[380px] max-h-[75vh]'
+            isFullscreen ? 'h-[calc(100vh-80px)] w-full' : 'h-[68vh] min-h-[380px] w-full'
           }`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -391,7 +391,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             </div>
           ) : mediaType === 'image' ? (
             <div
-              className="w-full h-full flex items-center justify-center overflow-hidden"
+              className="w-full h-full flex items-center justify-center p-3 sm:p-5 overflow-hidden relative"
               style={{
                 backgroundImage:
                   'radial-gradient(rgba(128, 128, 128, 0.25) 1px, transparent 0)',
@@ -408,10 +408,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   transition: isDragging ? 'none' : 'transform 0.12s ease-out',
                   userSelect: 'none',
                   WebkitUserDrag: 'none',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
                 }}
-                className={`max-w-full max-h-full object-contain rounded shadow-lg pointer-events-none ${
-                  isFullscreen ? 'max-h-[90vh]' : 'max-h-[68vh]'
-                }`}
+                className="rounded shadow-lg pointer-events-none"
                 onLoad={(e) => {
                   const img = e.currentTarget;
                   setDimensions({ width: img.naturalWidth, height: img.naturalHeight });
@@ -426,7 +427,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 controls
                 autoPlay
                 className={`max-w-full rounded shadow-xl bg-black ${
-                  isFullscreen ? 'max-h-[85vh]' : 'max-h-[68vh]'
+                  isFullscreen ? 'max-h-[85vh]' : 'max-h-[65vh]'
                 }`}
                 onError={() => setHasError(true)}
               >
