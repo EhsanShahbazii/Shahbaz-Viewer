@@ -89,6 +89,19 @@
           { "filenamePattern": "*.sl3" }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "shahbazViewer.editor",
+        "displayName": "SQLite Viewer & Studio (Legacy Alias)",
+        "selector": [
+          { "filenamePattern": "*.db" },
+          { "filenamePattern": "*.sqlite" },
+          { "filenamePattern": "*.sqlite3" },
+          { "filenamePattern": "*.db3" },
+          { "filenamePattern": "*.s3db" },
+          { "filenamePattern": "*.sl3" }
+        ],
+        "priority": "option"
       }
     ],
     "commands": [
